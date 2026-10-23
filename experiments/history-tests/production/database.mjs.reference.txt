@@ -1,0 +1,98 @@
+import fs from 'node:fs/promises';
+import assert from 'node:assert/strict';
+import {bootstrap} from 'file:///HISTORICAL_SOURCE_PATH';
+const root=new URL('../',import.meta.url),db=await bootstrap(),results=[];
+try{
+ await db.exec(await fs.readFile('HISTORICAL_SOURCE_PATH','utf8'));
+ await db.exec(await fs.readFile('HISTORICAL_SOURCE_PATH','utf8'));
+ for(const name of ['037_per_job_authorization.sql','038_cloud_launch_outbox.sql'])await db.exec(await fs.readFile(new URL(name,root),'utf8'));
+ const row=async(sql,args=[])=> (await db.query(sql,args)).rows[0];
+ const rpc=async(name,args)=> {
+  if(name==='st_cloud_worker_call'&&args[1]==='claim'&&args.length===4)args[3]={...args[3],workflow_version:'per-job-v1'};
+  return (await row(`SELECT public.${name}(${args.map((_,i)=>'$'+(i+1)).join(',')}) AS result`,args)).result;
+ };
+ const owner=(await row("SELECT m.auth_subject FROM public.st_members m JOIN public.st_member_roles r ON r.member_id=m.id WHERE r.role_code='owner' LIMIT 1")).auth_subject;
+ const asOwner=async()=>{await db.exec('RESET ROLE');await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)",[owner]);await db.exec('SET ROLE authenticated');};
+ const asAnon=async()=>{await db.exec('RESET ROLE');await db.exec("SELECT set_config('request.jwt.claim.sub','',false);SET ROLE anon;");};
+ const test=async(name,fn)=>{await fn();results.push({name,result:'pass'});console.log('PASS '+name);};
+ await asOwner();
+ const w=await rpc('st_cloud_worker_create',['synthetic-production']);
+ const other=await rpc('st_cloud_worker_create',['synthetic-other']);
+ async function makeJob(sha='a'){
+  await asOwner();const j=await rpc('st_cloud_prepare',[w.id,'Synthetic test only','00:00–00:01','fixture.mp4','video/mp4',1000,sha.repeat(64),1200,2,1]);
+  await db.exec('RESET ROLE');await db.query("UPDATE public.st_cloud_jobs SET state='queued',source_expires_at=now()+interval '1 hour',sources='[]'::jsonb WHERE id=$1",[j.job_id]);return j;
+ }
+ const j=await makeJob(),j2=await makeJob('b');
+ let claim;
+ await test('old worker protocol cannot claim a newly authorized video',async()=>{
+  await asAnon();await assert.rejects(()=>row("SELECT public.st_cloud_worker_call($1,'claim',$2,'{}')",[w.key,j.job_id]));
+ });
+ await test('owner-only launch; repeated request cannot create another dispatch',async()=>{
+  await asAnon();await assert.rejects(()=>rpc('st_cloud_launch_request',[j.job_id,'10000000-0000-4000-8000-000000000001']));
+  await asOwner();const first=await rpc('st_cloud_launch_request',[j.job_id,'10000000-0000-4000-8000-000000000001']);
+  const again=await rpc('st_cloud_launch_request',[j.job_id,'10000000-0000-4000-8000-000000000002']);
+  assert.equal(first.request_id,again.request_id);
+ });
+ await test('dispatch single-submit and ambiguous result cannot be resubmitted',async()=>{
+  await asAnon();const args=[w.key,j.job_id,'10000000-0000-4000-8000-000000000001'];
+  assert.equal((await rpc('st_cloud_dispatch_call',[...args,'begin',null])).may_submit,true);
+  assert.equal((await rpc('st_cloud_dispatch_call',[...args,'begin',null])).may_submit,false);
+  assert.equal((await rpc('st_cloud_dispatch_call',[...args,'unknown',null])).state,'unknown');
+  assert.equal((await rpc('st_cloud_dispatch_call',[...args,'begin',null])).may_submit,false);
+ });
+ await test('exact assigned job required; scope comes from server',async()=>{
+  await assert.rejects(()=>rpc('st_cloud_worker_call',[other.key,'claim',j.job_id,{}]));
+  await assert.rejects(()=>rpc('st_cloud_worker_call',[w.key,'claim',null,{}]));
+  claim=await rpc('st_cloud_worker_call',[w.key,'claim',j.job_id,{}]);
+  assert.equal(claim.authorization_scope,'job-'+j.job_id);assert.equal(claim.sha256,'a'.repeat(64));
+  assert.equal((await rpc('st_cloud_worker_call',[w.key,'claim',j.job_id,{}])).state,'no_job');
+ });
+ const reserve=(provider,id)=>rpc('st_cloud_worker_call',[w.key,'reserve',j.job_id,{lease_id:claim.lease_id,provider,request_id:id}]);
+ await test('reservation idempotency, provider conflict and strict per-job caps',async()=>{
+  const id='20000000-0000-4000-8000-000000000001';
+  assert.equal((await reserve('text',id)).counts.text,1);
+  assert.equal((await reserve('text',id)).counts.text,1);
+  await assert.rejects(()=>reserve('qwen',id));
+  assert.equal((await reserve('text','20000000-0000-4000-8000-000000000002')).counts.text,2);
+  await assert.rejects(()=>reserve('text','20000000-0000-4000-8000-000000000003'));
+  assert.equal((await reserve('qwen','20000000-0000-4000-8000-000000000004')).counts.qwen,1);
+  await assert.rejects(()=>reserve('qwen','20000000-0000-4000-8000-000000000005'));
+ });
+ await test('another source/job has an independent server allowance',async()=>{
+  const c=await rpc('st_cloud_worker_call',[w.key,'claim',j2.job_id,{}]);
+  const r=await rpc('st_cloud_worker_call',[w.key,'reserve',j2.job_id,{lease_id:c.lease_id,provider:'text',request_id:'30000000-0000-4000-8000-000000000001'}]);
+  assert.deepEqual(r.counts,{text:1,qwen:0});assert.equal(r.authorization_scope,'job-'+j2.job_id);
+ });
+ await test('heartbeat cannot lower authoritative request counters',async()=>{
+  await rpc('st_cloud_worker_call',[w.key,'heartbeat',j.job_id,{lease_id:claim.lease_id,stage:'test',progress:{text_requests:0,secondary_requests:0}}]);
+  await db.exec('RESET ROLE');const p=await row('SELECT progress FROM public.st_cloud_jobs WHERE id=$1',[j.job_id]);
+  assert.deepEqual(p.progress,{text_requests:2,secondary_requests:1});await asAnon();
+ });
+ await test('ledger table and private legacy RPC inaccessible to client roles',async()=>{
+  await assert.rejects(()=>db.query('SELECT * FROM public.st_cloud_request_reservations'));
+  await assert.rejects(()=>rpc('st_cloud_worker_call_v033',[w.key,'claim',j.job_id,{}]));
+  await db.exec('RESET ROLE');await assert.rejects(()=>db.query("DELETE FROM public.st_cloud_request_reservations WHERE job_id=$1",[j.job_id]));
+ });
+ await test('cancelled jobs cannot reserve; no quota restoration by new invocation',async()=>{
+  await asOwner();await rpc('st_cloud_cancel',[j.job_id]);await asAnon();
+  await assert.rejects(()=>reserve('text','40000000-0000-4000-8000-000000000001'));
+  await db.exec('RESET ROLE');assert.equal(Number((await row('SELECT count(*) AS n FROM public.st_cloud_request_reservations WHERE job_id=$1',[j.job_id])).n),3);
+ });
+ await test('20-minute cap enforced before orphan project creation',async()=>{
+  await asOwner();const before=await rpc('st_cloud_jobs_view',[null]);
+  await assert.rejects(()=>rpc('st_cloud_prepare',[w.id,'bad','bad','fixture.mp4','video/mp4',1000,'f'.repeat(64),1201,400,40]));
+  assert.equal((await rpc('st_cloud_jobs_view',[null])).jobs.length,before.jobs.length);
+ });
+ await test('existing nine-file publication and idempotency regression; zero human credits',async()=>{
+  await db.exec('RESET ROLE');
+  let sql=await fs.readFile('HISTORICAL_SOURCE_PATH','utf8');
+  sql=sql.replace("result:=public.st_cloud_worker_call(w->>'key','claim',(j2->>'job_id')::uuid);IF result->>'state'<>'no_job' THEN RAISE EXCEPTION 'Worker crossed job assignment';END IF;", "bad:=false;BEGIN PERFORM public.st_cloud_worker_call(w->>'key','claim',(j2->>'job_id')::uuid);EXCEPTION WHEN insufficient_privilege THEN bad:=true;END;IF NOT bad THEN RAISE EXCEPTION 'Worker crossed job assignment';END IF;");
+  sql=sql.replace(/('claim',\(j(?:2)?->>'job_id'\)::uuid)\)/g,"$1,'{\"workflow_version\":\"per-job-v1\"}'::jsonb)");
+  await fs.writeFile(new URL('tests/cloud-workflow-regression.sql',root),sql);
+  await db.exec(sql);
+ });
+ await db.exec('RESET ROLE');
+ const roles=await db.query("SELECT relname,relrowsecurity FROM pg_class WHERE relname IN ('st_cloud_request_reservations','st_cloud_launches')");
+ assert.ok(roles.rows.every(r=>r.relrowsecurity));
+ await fs.writeFile(new URL('tests/database-results.json',root),JSON.stringify({live:false,engine:'PGlite PostgreSQL WASM',results,limitations:['single connection; cannot prove parallel 20-request execution','synthetic data only; no CloudBase JWT or storage service integration']},null,2));
+}finally{await db.close();}

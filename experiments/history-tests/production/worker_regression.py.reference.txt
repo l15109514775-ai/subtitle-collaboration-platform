@@ -1,0 +1,23 @@
+"""Existing offline suites on Windows; POSIX directory fsync/flock adapted.
+All model replies are mocks. This does not replace Linux runtime acceptance.
+"""
+import importlib,json,os,sys,tempfile,types,unittest
+from pathlib import Path
+from unittest.mock import patch
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT/'worker'))
+if sys.platform=='win32':sys.modules['fcntl']=types.SimpleNamespace(LOCK_EX=2,LOCK_UN=8,flock=lambda *args:None)
+import worker
+original=worker.save
+def save(path,value):
+ path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
+ temporary=path.with_suffix(path.suffix+'.tmp');temporary.write_text(json.dumps(value,ensure_ascii=False),encoding='utf-8');temporary.replace(path)
+for name in ('worker','runtime','qwen_asr','qwen_recovery'):
+ module=importlib.import_module(name)
+ if getattr(module,'save',None) is original:module.save=save
+os.environ['TEMP']=str(ROOT/'tests');os.environ['TMP']=str(ROOT/'tests');tempfile.tempdir=str(ROOT/'tests')
+suite=unittest.TestSuite(unittest.defaultTestLoader.loadTestsFromName(name) for name in ('test_worker','test_cloud','test_platform_worker','test_20min'))
+with patch.dict(os.environ,{'SUBTITLE_GPT_TOKEN':'synthetic-unit-test-only'}):
+ result=unittest.TextTestRunner(verbosity=1).run(suite)
+(ROOT/'tests/worker-regression-results.json').write_text(json.dumps({'tests_run':result.testsRun,'failures':len(result.failures),'errors':len(result.errors),'skipped':len(result.skipped),'live':False,'platform':'Windows with POSIX persistence adapters; Linux acceptance pending'},indent=2),encoding='utf-8')
+sys.exit(not result.wasSuccessful())
