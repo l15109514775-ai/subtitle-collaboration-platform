@@ -1,0 +1,9 @@
+name: subtitle_bridge
+display_name: 字幕组网站联动
+desc: QQ 私聊账号绑定、项目与任务查询；按网站实时权限过滤。
+version: v1.0.0
+author: Subtitle Workspace
+support_platforms:
+  - qq_official
+astrbot_version: '>=4.29,<5'
+
