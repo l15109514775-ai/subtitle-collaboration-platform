@@ -13,9 +13,9 @@
     {
       "path": ".github/workflows/offline-checks.yml",
       "component": ".github",
-      "bytes": 838,
-      "sha256": "9039ba504e2188d4388a10015430255cd91ea00b60b9fb98118abdc643d3dcab",
-      "git_blob_sha": "ccf67e065345ba0327c3db7fda5faf459a7b4394"
+      "bytes": 898,
+      "sha256": "6c61a1a76321f4eac8d5751159021f642e3f72d998e473c8ae9cd490a8c4bfcc",
+      "git_blob_sha": "8bac7048c6b402de8ca2ca4ab2649ed2f56a37aa"
     },
     {
       "path": ".gitignore",
@@ -412,16 +412,16 @@
     {
       "path": "docs/开发与测试.html",
       "component": "docs",
-      "bytes": 4780,
-      "sha256": "cd153a5b8fb3d945b8c00e1e1e9305983e56bd749affcb59af83c6f08b0041fc",
-      "git_blob_sha": "2c2d7cbfbd4ab4a92a7f54b2419db63c03035d62"
+      "bytes": 4966,
+      "sha256": "28a6267306c493efb63b542ba16b8b2e817ef606733043a044a3de04e4bb8268",
+      "git_blob_sha": "a898b122d7933c7eb43629a7ed9ca1cd49b13831"
     },
     {
       "path": "docs/开发与测试.md",
       "component": "docs",
-      "bytes": 3832,
-      "sha256": "0df454b8c23245fd5f6eec2eebef1fe29c28ecba59f71e991f98927ada0bf819",
-      "git_blob_sha": "0f60c313e81edf3e96fccd505c946259a4ba2c81"
+      "bytes": 4018,
+      "sha256": "bbb83235936b330695e08f5ea87de89a45eac89c391f6a12481eaccd40afe11b",
+      "git_blob_sha": "3cc1b0b53269bbc48393790a4a98e4ba8d902f07"
     },
     {
       "path": "docs/开源范围.html",
@@ -786,6 +786,13 @@
       "bytes": 680,
       "sha256": "81106d0a7a4eae8630a99fe6319963c911347458ff2455164fa0d03d99911b28",
       "git_blob_sha": "4eb3437f35fcae6a6c86306d447a55e08399a894"
+    },
+    {
+      "path": "requirements-test.txt",
+      "component": "project",
+      "bytes": 94,
+      "sha256": "799e7e513e11be0e3a5e966a97295927270f192c54c70e89a5c462b176bc8730",
+      "git_blob_sha": "27467d0f548e887ff7265685dc4b660269688255"
     },
     {
       "path": "site/app.js",
