@@ -1,0 +1,5 @@
+# Install into the existing pinned Cloud runtime; no remote scripts/plugins.
+yt-dlp[default]==2026.8.19
+yt-dlp-ejs==0.8.0
+# Existing official Node v24.19.0 is selected explicitly; no remote JS download.
+

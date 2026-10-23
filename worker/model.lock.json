@@ -1,0 +1,9 @@
+{
+  "repository": "dropbox-dash/faster-whisper-large-v3-turbo",
+  "previous_repository": "mobiuslabsgmbh/faster-whisper-large-v3-turbo",
+  "revision": "0a363e9161cbc7ed1431c9597a8ceaf0c4f78fcf",
+  "files": ["config.json", "model.bin", "preprocessor_config.json", "tokenizer.json", "vocabulary.json"],
+  "expected_download_bytes_upper_bound": 1800000000,
+  "destination": "/workspace/subtitle-models/large-v3-turbo"
+}
+

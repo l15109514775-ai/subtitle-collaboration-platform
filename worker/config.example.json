@@ -1,0 +1,21 @@
+{
+  "billable_execution_approved": false,
+  "max_text_requests": 0,
+  "max_qwen_requests": 0,
+  "authorization_scope": "trial-20min-20261021",
+  "max_video_bytes": 1073741824,
+  "max_video_seconds": 1200,
+  "max_cues": 3000,
+  "max_output_tokens": 1800,
+  "gpt_base_url": "https://text-provider.example.invalid/v1",
+  "gpt_model": "gpt-6-luna",
+  "whisper_model_path": "/workspace/subtitle-models/large-v3-turbo",
+  "device": "cpu",
+  "compute_type": "int8",
+  "cpu_threads": 2,
+  "num_workers": 1,
+  "qwen_base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  "qwen_model": "qwen3-asr-flash",
+  "qwen_credential_env": "SUBTITLE_QWEN_TOKEN",
+  "qwen_chunk_seconds": 30
+}
