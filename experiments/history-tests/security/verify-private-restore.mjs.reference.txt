@@ -1,0 +1,39 @@
+// Isolated in-memory restore. Never emits private rows, subjects or file paths.
+import {bootstrap} from './database.mjs';
+import {unsealBuffer} from '../secure-backup.mjs';
+import fs from 'node:fs/promises';import path from 'node:path';import crypto from 'node:crypto';import {fileURLToPath} from 'node:url';
+const out=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),backup=path.join(out,'private-backup');
+const snapshot=JSON.parse(await unsealBuffer(path.join(backup,'business-before-032.stbackup')));
+const names=Object.keys(snapshot.tables);
+if(names.some(n=>!/^st_[a-z_]+$/.test(n)))throw Error('Unexpected table');
+const db=await bootstrap();
+try{
+ await db.exec('BEGIN');
+ for(const name of names)await db.exec(`ALTER TABLE public.${name} DISABLE TRIGGER USER`);
+ await db.exec(`TRUNCATE ${names.map(n=>'public.'+n).join(',')} CASCADE`);
+ const refs=(await db.query(`SELECT a.relname AS child,b.relname AS parent FROM pg_constraint c JOIN pg_class a ON a.oid=c.conrelid JOIN pg_class b ON b.oid=c.confrelid WHERE c.contype='f' AND a.relname LIKE 'st_%' AND b.relname LIKE 'st_%'`)).rows;
+ const pending=new Set(names),done=new Set();
+ while(pending.size){const ready=[...pending].filter(n=>refs.filter(r=>r.child===n&&r.parent!==n).every(r=>done.has(r.parent)));if(!ready.length)throw Error('Unresolved dependency cycle');
+  for(const name of ready){
+   if(snapshot.tables[name].length)await db.query(`INSERT INTO public.${name} OVERRIDING SYSTEM VALUE SELECT * FROM jsonb_populate_recordset(NULL::public.${name},$1::jsonb)`,[JSON.stringify(snapshot.tables[name])]);
+   done.add(name);pending.delete(name);
+  }
+ }
+ for(const name of names)await db.exec(`ALTER TABLE public.${name} ENABLE TRIGGER USER`);
+ for(const name of names){
+  const got=(await db.query(`SELECT to_jsonb(t) AS row FROM public.${name} t`)).rows.map(r=>r.row);
+  const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
+  const canonical=x=>JSON.stringify(stable(x));
+  const expected=snapshot.tables[name].map(r=>name==='st_cloud_jobs'?{...r,sources:null}:r);
+  if(JSON.stringify(got.map(canonical).sort())!==JSON.stringify(expected.map(canonical).sort()))throw Error('Restored table differs: '+name);
+ }
+ await db.exec('COMMIT');
+ const manifest=JSON.parse(await unsealBuffer(path.join(backup,'object-manifest.stbackup')));
+ let bytes=0;
+ for(const object of manifest.objects){const data=await unsealBuffer(path.join(backup,object.file));if(data.length!==object.bytes||crypto.createHash('sha256').update(data).digest('hex')!==object.sha256)throw Error('Restored bytes differ');bytes+=data.length;data.fill(0);}
+ // Dry-run the exact approved migration on the restored real state in memory.
+ await db.exec(await fs.readFile(path.join(out,'032_security_boundaries.sql'),'utf8'));
+ const report={privateRestore:'pass',businessTables:names.length,rows:Object.values(snapshot.tables).reduce((n,r)=>n+r.length,0),objects:manifest.objects.length,objectBytes:bytes,approvedMigrationOnRestoredState:'pass',storageServiceRestoreTested:false,authAccountsExcluded:true,signedSourceURLsExcluded:true,plaintextWritten:false,limitations:['In-memory PostgreSQL restore with local auth/storage adapters, not a CloudBase service restore','Authentication accounts and their passwords are not backed up','Existing signed input URLs deliberately excluded; restored cloud jobs require explicit reauthorization']};
+ await fs.writeFile(path.join(out,'private-restore-results.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+}catch(error){console.error(JSON.stringify({privateRestore:'failed',code:error.code||null,details:/^(Restored table differs: st_[a-z_]+|Unresolved dependency cycle|Unexpected table|Restored bytes differ)$/.test(error.message)?error.message:'Private diagnostic suppressed'}));process.exitCode=1;}
+finally{await db.close();}

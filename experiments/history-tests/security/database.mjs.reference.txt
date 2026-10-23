@@ -1,0 +1,51 @@
+import {PGlite} from '@electric-sql/pglite';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const out=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+const root=String.raw`HISTORICAL_SOURCE_PATH`;
+const clip=String.raw`HISTORICAL_SOURCE_PATH`;
+export async function bootstrap(){
+ const db=new PGlite();
+ await db.exec(`CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;
+ CREATE SCHEMA auth; CREATE SCHEMA storage;
+ CREATE TABLE auth.users(id bigint GENERATED ALWAYS AS IDENTITY,sub text UNIQUE,username text,project text DEFAULT 'fixture',email_verified boolean);
+ INSERT INTO auth.users(sub,username) VALUES('fixture-owner','administrator');
+ CREATE FUNCTION auth.uid() RETURNS text LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'') $$;
+ GRANT USAGE ON SCHEMA auth,storage,public TO anon,authenticated,service_role;
+ GRANT EXECUTE ON FUNCTION auth.uid() TO anon,authenticated,service_role;
+ CREATE TABLE storage.buckets(id text PRIMARY KEY,name text,public boolean DEFAULT false,file_size_limit bigint,allowed_mime_types text[]);
+ CREATE TABLE storage.objects(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),bucket_id text REFERENCES storage.buckets(id),name text,owner_id text,metadata jsonb,created_at timestamptz DEFAULT now(),UNIQUE(bucket_id,name));
+ GRANT ALL ON storage.buckets,storage.objects TO anon,authenticated,service_role;`);
+ const migrations=['001_closed_foundation.sql','002_closed_application_functions.sql','003_ACCESS_PENDING_APPROVAL.sql','007_media_and_soft_delete.sql','009_storage_owner_compat.sql','011_chunked_media.sql','014_member_applications.sql','016_project_claim_workflow.sql','019_codex_project_names.sql','021_cloud_jobs.sql','023_cloud_usage_required.sql','024_cloud_claim_guard.sql'];
+ for(const file of migrations)await db.exec(await fs.readFile(path.join(root,file),'utf8'));
+ for(const file of ['026_cloud_clips.sql','031_cloud_clip_storage_insert_compat.sql'])await db.exec(await fs.readFile(path.join(clip,file),'utf8'));
+ // Use definitions and client grants actually read from the live console.
+ // Only synthetic rows are present in this process; no live business data used.
+ const inventory=JSON.parse(await fs.readFile(path.join(out,'live-inventory.json'),'utf8'));
+ for(const f of inventory.functions){
+  await db.exec(f.definition);
+  await db.exec(`REVOKE ALL ON FUNCTION public.${f.signature} FROM PUBLIC,anon,authenticated,service_role`);
+  for(const role of ['anon','authenticated','service_role'])if(new RegExp('(?:[,{])'+role+'=[^/]*X').test(f.acl||''))await db.exec(`GRANT EXECUTE ON FUNCTION public.${f.signature} TO ${role}`);
+ }
+ for(const t of inventory.tables.filter(t=>t.schema==='public')){
+  for(const role of ['anon','authenticated','service_role'])if(new RegExp('(?:[,{])'+role+'=').test(t.acl||''))await db.exec(`GRANT ALL ON public.${t.name} TO ${role}`);
+ }
+ return db;
+}
+if(process.argv[1]===fileURLToPath(import.meta.url)){
+ const report={engine:'PGlite PostgreSQL WASM, live function definitions and grants, synthetic auth/storage metadata adapters',live:false,tests:[],limitations:['No real CloudBase JWT/gateway/storage bytes tested','PGlite single connection cannot prove 20 simultaneous claims','No live backup or recovery performed']};
+ const db=await bootstrap();
+ async function suite(name,sql){try{await db.exec(sql);report.tests.push({name,result:'pass'});console.log('PASS',name);}catch(e){await db.exec('ROLLBACK; RESET ROLE;');report.tests.push({name,result:'fail',code:e.code,message:e.message});console.log('FAIL',name,e.code,e.message);}}
+ // Reproduce concrete defects against source before applying candidate.
+ await suite('pre-fix defect reproduction',await fs.readFile(path.join(out,'tests','regression.sql'),'utf8').then(s=>s.replaceAll('__EXPECT_FIXED__','false')));
+ await db.exec(await fs.readFile(path.join(out,'032_security_boundaries.sql'),'utf8'));
+ await suite('post-fix security regression',await fs.readFile(path.join(out,'tests','regression.sql'),'utf8').then(s=>s.replaceAll('__EXPECT_FIXED__','true')));
+ for(const name of ['006_authenticated_role_test.sql','010_storage_compat_tests.sql','012_chunked_media_tests.sql','015_member_application_tests.sql','017_project_claim_tests.sql','020_codex_project_name_tests.sql','022_cloud_jobs_tests.sql','025_cloud_claim_guard_tests.sql'])await suite(name,await fs.readFile(path.join(root,name),'utf8'));
+ await suite('027_cloud_clips_tests.sql',await fs.readFile(path.join(clip,'027_cloud_clips_tests.sql'),'utf8'));
+ const metadata=await db.query(`SELECT c.relname,c.relrowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='r' AND c.relname LIKE 'st_%' ORDER BY c.relname`);
+ report.metadata=metadata.rows;
+ await fs.writeFile(path.join(out,'database-results.json'),JSON.stringify(report,null,2));
+ await db.close();
+ if(report.tests.some(t=>t.result==='fail'))process.exitCode=1;
+}
