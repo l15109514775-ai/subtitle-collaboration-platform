@@ -1,0 +1,66 @@
+import fs from 'node:fs/promises';
+import assert from 'node:assert/strict';
+import {bootstrap} from 'file:///HISTORICAL_SOURCE_PATH';
+const root=new URL('file:///HISTORICAL_SOURCE_PATH'),db=await bootstrap(),results=[];
+const semi=new URL('file:///HISTORICAL_SOURCE_PATH');
+try{
+ for(const file of [
+  'HISTORICAL_SOURCE_PATH',
+  'HISTORICAL_SOURCE_PATH',
+  'HISTORICAL_SOURCE_PATH',
+  'HISTORICAL_SOURCE_PATH'
+ ])await db.exec(await fs.readFile(file,'utf8'));
+ // Execute the exact release transaction against the saved public function
+ // definitions and the same private-storage preconditions as the live service.
+ const before=JSON.parse(await fs.readFile(new URL('deployment/database-before-exact.json',semi),'utf8'));
+ for(const f of before.functions)await db.exec(f.definition);
+ await db.exec('ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY');
+ await db.exec(await fs.readFile(new URL('deployment/039-release.sql',semi),'utf8'));
+
+ await db.exec(await fs.readFile('HISTORICAL_SOURCE_PATH','utf8'));
+ await db.exec(await fs.readFile(new URL('041_qq_submission_notifications.sql',root),'utf8'));
+ await db.exec(await fs.readFile(new URL('042_qq_approval_instructions.sql',root),'utf8'));
+ const row=async(sql,args=[])=> (await db.query(sql,args)).rows[0];
+ const rpc=async(name,args=[])=> (await row(`SELECT public.${name}(${args.map((_,i)=>'$'+(i+1)).join(',')}) AS result`,args)).result;
+ const act=async(subject,role='authenticated')=>{await db.exec('RESET ROLE');await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)",[subject]);await db.exec('SET ROLE '+role);};
+ const test=async(name,fn)=>{await fn();results.push({name,result:'pass'});console.log('PASS '+name);};
+ const owner=(await row("SELECT m.auth_subject FROM public.st_members m JOIN public.st_member_roles r ON r.member_id=m.id WHERE r.role_code='owner' LIMIT 1")).auth_subject;
+ const ownerId=(await row('SELECT id FROM public.st_members WHERE auth_subject=$1',[owner])).id;
+
+
+ await db.exec(await fs.readFile('HISTORICAL_SOURCE_PATH','utf8'));
+ const live=JSON.parse(await fs.readFile(new URL('../live-before.json',import.meta.url),'utf8'));
+ for(const f of live.functions)await db.exec(f.definition);
+ await db.exec(await fs.readFile(new URL('../045_credit_reporting.sql',import.meta.url),'utf8'));
+ await db.exec(await fs.readFile(new URL('../046_credit_legacy_scope.sql',import.meta.url),'utf8'));
+ const mids={};for(const name of ['credit-a','credit-b']){mids[name]=(await row('INSERT INTO public.st_members(auth_subject,display_name) VALUES($1,$1) RETURNING id',[name])).id;await db.query("INSERT INTO public.st_member_roles(member_id,role_code) VALUES($1,'contributor')",[mids[name]]);}
+ const make=async(who='credit-a',source='manual',kind='translate')=>{
+  await db.exec('RESET ROLE');const p=(await row("INSERT INTO public.st_projects(title,created_by) VALUES('Synthetic credits',$1) RETURNING id",[ownerId])).id;
+  await db.query("INSERT INTO public.st_project_members(project_id,member_id,role) VALUES($1,$2,'contributor')",[p,mids[who]]);
+  const t=(await row("INSERT INTO public.st_tasks(project_id,title,kind,created_by,state) VALUES($1,'Synthetic reviewed task',$2,$3,'submitted') RETURNING id",[p,kind,ownerId])).id;
+  let agent=null;if(source!=='manual')agent=(await row("INSERT INTO public.st_agent_runs(project_id,provider,external_run_id,initiated_by) VALUES($1,'codex',gen_random_uuid()::text,$2) RETURNING id",[p,ownerId])).id;
+  const d=(await row("INSERT INTO public.st_deliveries(task_id,project_id,version_no,source,submitted_by,content_text,content_sha256,agent_run_id) VALUES($1,$2,1,$3,$4,'synthetic subtitle',$5,$6) RETURNING id",[t,p,source,mids[who],'a'.repeat(64),agent])).id;
+  return {p,t,d};
+ };
+ const review=async(f,points=10)=>{await act(owner);return rpc('st_review',[f.d,'approved','Synthetic acceptance',points,'Verified synthetic manual work']);};
+ const first=await make();await review(first);
+ await db.exec('RESET ROLE');const contribution=(await row('SELECT id FROM public.st_contributions WHERE delivery_id=$1',[first.d])).id;
+ await test('verified review atomically creates contribution and original award',async()=>{await act('credit-a');const r=await rpc('st_credit_report');assert.equal(r.summary.points,10);assert.equal(r.summary.verified,1);assert.equal(r.ledger[0].entry_type,'award');assert.equal(r.contributions[0].content_sha256,'a'.repeat(64));});
+ await test('repeated review cannot award twice',async()=>{await assert.rejects(()=>review(first));await act('credit-a');assert.equal((await rpc('st_credit_report')).summary.points,10);});
+ await test('self review is refused',async()=>{const f=await make();await act('credit-a');await assert.rejects(()=>rpc('st_review',[f.d,'approved','',10,'own']));});
+ await test('AI initial drafts cannot produce human contribution points',async()=>{const f=await make('credit-b','codex');await assert.rejects(()=>review(f));});
+ await test('cover contributions are counted like other manually reviewed work',async()=>{const f=await make('credit-b','manual','cover');await review(f,5);await act('credit-b');assert.equal((await rpc('st_credit_report')).summary.points,5);});
+ await test('member report cannot leak other member statistics or identifiers',async()=>{await act('credit-a');const r=await rpc('st_credit_report');assert(r.members.every(m=>m.id===mids['credit-a']));assert(r.ledger.every(e=>e.member_id===mids['credit-a']));await assert.rejects(()=>rpc('st_credit_report',[mids['credit-b']]));});
+ await test('legacy project board also filters another member contribution and point rows',async()=>{await db.exec('RESET ROLE');await db.query("INSERT INTO public.st_project_members(project_id,member_id,role) VALUES($1,$2,'contributor')",[first.p,mids['credit-b']]);await act('credit-b');const b=await rpc('st_board',[first.p]);assert.equal(b.contributions.length,0);assert.equal(b.points.length,0);await act('credit-a');const own=await rpc('st_board',[first.p]);assert.equal(own.contributions.length,1);assert.equal(own.points.length,1);});
+ await test('ordinary member and anonymous cannot adjust points',async()=>{await act('credit-a');await assert.rejects(()=>rpc('st_credit_adjust',[contribution,1,'Unauthorized change',crypto.randomUUID()]));await act('','anon');await assert.rejects(()=>rpc('st_credit_report'));await assert.rejects(()=>rpc('st_credit_adjust',[contribution,1,'Unauthorized change',crypto.randomUUID()]));});
+ const key=crypto.randomUUID();let adjustment;
+ await test('owner correction adds separate signed ledger without editing award',async()=>{await act(owner);adjustment=await rpc('st_credit_adjust',[contribution,-3,'Correct synthetic scoring',key]);const r=await rpc('st_credit_report',[mids['credit-a']]);assert.equal(r.summary.points,7);assert.equal(r.summary.adjustments,1);assert(r.ledger.some(e=>e.points===10&&e.entry_type==='award'));assert(r.ledger.some(e=>e.points===-3&&e.entry_type==='adjustment'));});
+ await test('retry with same request ID is idempotent; altered retry is denied',async()=>{assert.equal(await rpc('st_credit_adjust',[contribution,-3,'Correct synthetic scoring',key]),adjustment);await assert.rejects(()=>rpc('st_credit_adjust',[contribution,-2,'Correct synthetic scoring',key]));assert.equal((await rpc('st_credit_report',[mids['credit-a']])).summary.points,7);});
+ await test('invalid adjustments and negative resulting contribution balance fail atomically',async()=>{for(const args of [[contribution,0,'Reason correct'],[contribution,1,'x'],[contribution,-8,'Too negative adjustment'],[contribution,10000,'Too high adjustment']])await assert.rejects(()=>rpc('st_credit_adjust',[...args,crypto.randomUUID()]));assert.equal((await rpc('st_credit_report',[mids['credit-a']])).summary.points,7);});
+ await test('owner sees full team and project filters produce exact totals',async()=>{const r=await rpc('st_credit_report');assert.equal(r.summary.points,12);assert.equal(r.summary.verified,2);assert.equal(r.member_totals.length,2);assert.equal((await rpc('st_credit_report',[null,first.p])).summary.points,7);});
+ await test('zero-point approved work still has verifiable contribution',async()=>{const f=await make();await review(f,0);await act('credit-a');const r=await rpc('st_credit_report');assert.equal(r.summary.verified,2);assert.equal(r.summary.points,7);});
+ await test('deleted projects keep historical contribution and signed ledger',async()=>{await db.exec('RESET ROLE');await db.query('UPDATE public.st_projects SET deleted_at=now() WHERE id=$1',[first.p]);await act('credit-a');assert.equal((await rpc('st_credit_report')).summary.points,7);});
+ await test('ledger pagination and invalid page boundaries are enforced',async()=>{assert.equal((await rpc('st_credit_report',[null,null,50])).ledger.length,0);await assert.rejects(()=>rpc('st_credit_report',[null,null,-1]));});
+ await test('raw adjustment writes and historical edits remain forbidden',async()=>{await assert.rejects(()=>db.query('SELECT * FROM public.st_point_adjustments'));await db.exec('RESET ROLE');await assert.rejects(()=>db.query('UPDATE public.st_point_adjustments SET delta=2 WHERE id=$1',[adjustment]));assert.equal(Number((await row("SELECT count(*) n FROM public.st_audit_events WHERE entity_table='st_point_adjustments' AND entity_id=$1",[adjustment])).n),1);});
+ await fs.writeFile(new URL('../database-results.json',import.meta.url),JSON.stringify({engine:'PGlite',live:false,results},null,2));
+}finally{await db.close();}
