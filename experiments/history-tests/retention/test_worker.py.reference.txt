@@ -1,0 +1,52 @@
+import asyncio
+import importlib
+from pathlib import Path
+import sys
+import types
+import unittest
+from unittest.mock import AsyncMock
+
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+sys.modules.setdefault('aiohttp',types.ModuleType('aiohttp'))
+m=importlib.import_module('purge_plugin.cleanup_worker')
+ID='10000000-0000-4000-8000-000000000001'
+ROW={'object_id':ID,'bucket_id':'subtitle-inputs','name':'requests/'+ID+'/part-0000'}
+LEASE={'idle':False,'job_id':ID,'capability':'a'*64,'objects':[ROW]}
+CONF={'publishable_key':'synthetic-public','gateway_key':'synthetic-gateway'}
+
+class Tests(unittest.IsolatedAsyncioTestCase):
+    async def test_idle_no_storage_call(self):
+        call=AsyncMock(return_value={'idle':True})
+        self.assertEqual(await m.cleanup_pass(CONF,'synthetic-owner',asyncio.get_running_loop().time()+5,call),0)
+        self.assertEqual(call.await_count,1)
+    async def test_exact_batch_delete_and_metadata_reconciliation(self):
+        call=AsyncMock(side_effect=[LEASE,[],{'idle':False,'job_id':ID,'completed':True},{'idle':True}])
+        self.assertEqual(await m.cleanup_pass(CONF,'owner',asyncio.get_running_loop().time()+5,call),1)
+        send=call.await_args_list[1].args
+        self.assertEqual(send[0],'DELETE');self.assertEqual(send[1],m.BASE+'/v1/storages/object/subtitle-inputs')
+        self.assertEqual(send[2]['x-subtitle-purge'],'a'*64);self.assertEqual(send[3],{'prefixes':[ROW['name']]})
+        self.assertNotIn(CONF['gateway_key'],str(send))
+    async def test_unknown_delete_result_stops_until_next_scheduled_reconciliation(self):
+        call=AsyncMock(side_effect=[LEASE,TimeoutError()])
+        with self.assertRaises(TimeoutError):await m.cleanup_pass(CONF,'owner',asyncio.get_running_loop().time()+5,call)
+        self.assertEqual(call.await_count,2)
+    async def test_deadline_prevents_any_call(self):
+        call=AsyncMock();await m.cleanup_pass(CONF,'owner',asyncio.get_running_loop().time()-1,call);call.assert_not_called()
+    async def test_invalid_paths_buckets_and_capabilities_fail_before_storage(self):
+        for row in [{**ROW,'name':'../secret'},{**ROW,'bucket_id':'public-assets'},{**ROW,'name':ID+'/../other'},{**ROW,'name':'https://evil.invalid/a'},{**ROW,'url':'secret'}]:
+            call=AsyncMock(return_value={**LEASE,'objects':[row]})
+            with self.assertRaises((ValueError,KeyError,TypeError)):await m.cleanup_pass(CONF,'owner',asyncio.get_running_loop().time()+5,call)
+            self.assertEqual(call.await_count,1)
+        with self.assertRaises(ValueError):m.validate({**LEASE,'capability':'invalid'})
+    async def test_oversized_or_duplicate_manifest_rejected(self):
+        for rows in [[ROW]*21,[ROW,ROW],[]]:
+            with self.assertRaises(ValueError):m.validate({**LEASE,'objects':rows})
+    async def test_separate_bucket_calls_have_exact_names(self):
+        second={**ROW,'object_id':'20000000-0000-4000-8000-000000000001','bucket_id':'subtitle-deliveries','name':ID+'/task/image.png'}
+        call=AsyncMock(side_effect=[{**LEASE,'objects':[ROW,second]},[],[],{'idle':True}])
+        await m.cleanup_pass(CONF,'owner',asyncio.get_running_loop().time()+5,call)
+        deletes=[c.args for c in call.await_args_list if c.args[0]=='DELETE']
+        self.assertEqual(len(deletes),2)
+        self.assertEqual(sum(len(c[3]['prefixes']) for c in deletes),2)
+
+if __name__=='__main__':unittest.main()

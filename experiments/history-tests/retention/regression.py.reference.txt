@@ -1,0 +1,20 @@
+"""Run the existing notification and scheduling suite against the new candidate."""
+import importlib
+from pathlib import Path
+import sys
+import unittest
+
+root=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(root))
+sys.path.insert(0,'HISTORICAL_SOURCE_PATH')
+import test_notify as fixture
+candidate=importlib.import_module('purge_plugin.main')
+logic=importlib.import_module('purge_plugin.outbox')
+fixture.m=candidate;fixture.logic=logic
+sys.modules['astrbot_plugin_subtitle_notify.main']=candidate
+sys.modules['astrbot_plugin_subtitle_notify.outbox']=logic
+suite=unittest.TestSuite()
+for name in ['test_notify','test_approval','test_schedule']:
+    suite.addTests(unittest.defaultTestLoader.loadTestsFromModule(importlib.import_module(name)))
+result=unittest.TextTestRunner(verbosity=1).run(suite)
+raise SystemExit(0 if result.wasSuccessful() else 1)

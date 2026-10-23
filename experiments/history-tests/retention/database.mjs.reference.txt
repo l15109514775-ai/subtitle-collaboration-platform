@@ -1,0 +1,105 @@
+import fs from 'node:fs/promises';
+import assert from 'node:assert/strict';
+import {bootstrap} from 'file:///HISTORICAL_SOURCE_PATH';
+const root=new URL('file:///HISTORICAL_SOURCE_PATH'),db=await bootstrap(),results=[];
+const semi=new URL('file:///HISTORICAL_SOURCE_PATH');
+try{
+ for(const file of [
+  'HISTORICAL_SOURCE_PATH',
+  'HISTORICAL_SOURCE_PATH',
+  'HISTORICAL_SOURCE_PATH',
+  'HISTORICAL_SOURCE_PATH'
+ ])await db.exec(await fs.readFile(file,'utf8'));
+ // Execute the exact release transaction against the saved public function
+ // definitions and the same private-storage preconditions as the live service.
+ const before=JSON.parse(await fs.readFile(new URL('deployment/database-before-exact.json',semi),'utf8'));
+ for(const f of before.functions)await db.exec(f.definition);
+ await db.exec('ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY');
+ await db.exec(await fs.readFile(new URL('deployment/039-release.sql',semi),'utf8'));
+
+ await db.exec(await fs.readFile('HISTORICAL_SOURCE_PATH','utf8'));
+ await db.exec(await fs.readFile(new URL('041_qq_submission_notifications.sql',root),'utf8'));
+ await db.exec(await fs.readFile(new URL('042_qq_approval_instructions.sql',root),'utf8'));
+ const row=async(sql,args=[])=> (await db.query(sql,args)).rows[0];
+ const rpc=async(name,args=[])=> (await row(`SELECT public.${name}(${args.map((_,i)=>'$'+(i+1)).join(',')}) AS result`,args)).result;
+ const act=async(subject,role='authenticated')=>{await db.exec('RESET ROLE');await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)",[subject]);await db.exec('SET ROLE '+role);};
+ const test=async(name,fn)=>{await fn();results.push({name,result:'pass'});console.log('PASS '+name);};
+ const owner=(await row("SELECT m.auth_subject FROM public.st_members m JOIN public.st_member_roles r ON r.member_id=m.id WHERE r.role_code='owner' LIMIT 1")).auth_subject;
+ const ownerId=(await row('SELECT id FROM public.st_members WHERE auth_subject=$1',[owner])).id;
+ const member=(await row("INSERT INTO public.st_members(auth_subject,display_name) VALUES('notify-member','Fixture member') RETURNING id")).id;
+ await db.query("INSERT INTO public.st_member_roles(member_id,role_code) VALUES($1,'contributor')",[member]);
+ const key='1'.repeat(64),sender='2'.repeat(64),other='3'.repeat(64);
+ await act(owner);const gateway=await rpc('st_qq_gateway_register',['YOUR_QQ_APP_ID', (await import('node:crypto')).createHash('sha256').update(key).digest('hex')]);
+ await db.exec('RESET ROLE');await db.query('INSERT INTO public.st_qq_links(gateway_id,sender_hash,member_id) VALUES($1,$2,$3),($1,$4,$5)',[gateway,sender,ownerId,other,member]);
+ const feed=async(k=key,s=sender,after=null,id=null)=>{await act('','anon');return rpc('st_qq_notification_feed',[k,s,after,id]);};
+
+ await db.exec(await fs.readFile('HISTORICAL_SOURCE_PATH','utf8'));
+
+ await act(owner);await rpc('st_qq_notification_configure',[gateway,true]);
+ const worker=await rpc('st_cloud_worker_create',['purge-fixture']);
+ await db.exec('RESET ROLE');await db.query('INSERT INTO public.st_purge_config(id,owner_id,gateway_id) VALUES(1,$1,$2)',[ownerId,gateway]);
+ await test('disabled configuration denies permanent deletion',async()=>{await act(owner);assert.equal(await rpc('st_purge_owner'),false);await assert.rejects(()=>rpc('st_purge_begin',['project',gateway,'x']));});
+ await db.exec('RESET ROLE');await db.exec('UPDATE public.st_purge_config SET enabled=true');
+ const prepare=async()=>{await act('notify-member');const r=await rpc('st_subtitle_request_prepare',['purge fixture','00:00-00:01','synthetic','fixture.mp4','video/mp4',1000,'a'.repeat(64),1]);await db.exec('RESET ROLE');await db.query(`INSERT INTO storage.objects(bucket_id,name,owner_id,metadata) VALUES('subtitle-inputs',$1,'notify-member','{"size":1000,"mimetype":"video/mp4"}')`,['requests/'+r.request_id+'/part-0000']);await act('notify-member');await rpc('st_subtitle_request_submit',[r.request_id]);return r;};
+ const r=await prepare();
+ await act(owner);const a=await rpc('st_subtitle_request_decide',[r.request_id,'approved',worker.id,1,1,1,'',[{path:'requests/'+r.request_id+'/part-0000',byte_size:1000,url:'https://example-env.api.tcloudbasegateway.com/v1/storages/object/sign/subtitle-inputs/requests/'+r.request_id+'/part-0000?token=synthetic-only'}]]);
+ await db.exec('RESET ROLE');const job=await row('SELECT project_id,task_id FROM public.st_cloud_jobs WHERE id=$1',[a.job_id]);
+
+ const inline=(await row("INSERT INTO public.st_deliveries(task_id,project_id,version_no,source,submitted_by,content_text,notes,content_sha256) VALUES($1,$2,1,'manual',$3,'PRIVATE INLINE SUBTITLE','PRIVATE NOTES',$4) RETURNING id",[job.task_id,job.project_id,member,'b'.repeat(64)])).id;
+ await db.query("UPDATE public.st_tasks SET state='submitted' WHERE id=$1",[job.task_id]);
+ const review=(await row("INSERT INTO public.st_reviews(delivery_id,task_id,project_id,reviewer_id,decision,feedback) VALUES($1,$2,$3,$4,'approved','PRIVATE REVIEW') RETURNING id",[inline,job.task_id,job.project_id,ownerId])).id;
+ const contribution=(await row("INSERT INTO public.st_contributions(project_id,task_id,delivery_id,review_id,member_id,contribution_kind,human_work_description,units,unit_label,attested_by) VALUES($1,$2,$3,$4,$5,'proofread','Synthetic verified contribution',1,'fixture',$6) RETURNING id",[job.project_id,job.task_id,inline,review,member,ownerId])).id;
+ await db.query("INSERT INTO public.st_point_entries(member_id,contribution_id,points,reason,recorded_by) VALUES($1,$2,1,'synthetic award',$3)",[member,contribution,ownerId]);
+ const agent=(await row("INSERT INTO public.st_agent_runs(project_id,provider,external_run_id,summary) VALUES($1,'codex','purge-synthetic','PRIVATE AGENT SUMMARY') RETURNING id",[job.project_id])).id;
+ await test('immutable subtitle content cannot be changed outside purge finalizer',async()=>{await assert.rejects(()=>db.query("UPDATE public.st_deliveries SET content_text='' WHERE id=$1",[inline]));});
+ await test('ordinary member and another owner cannot preview or queue purge',async()=>{await db.exec('RESET ROLE');await db.query("INSERT INTO public.st_member_roles(member_id,role_code) VALUES($1,'owner')",[member]);await act('notify-member');assert.equal(await rpc('st_purge_owner'),false);await assert.rejects(()=>rpc('st_purge_preview',['project',job.project_id]));await assert.rejects(()=>rpc('st_purge_begin',['project',job.project_id,'x']));});
+ await test('active project cannot be permanently deleted',async()=>{await act(owner);await assert.rejects(()=>rpc('st_purge_preview',['project',job.project_id]));});
+ await act(owner);await rpc('st_delete_project',[job.project_id,'purge fixture｜00:00-00:01｜AI字幕初稿']);
+ await test('video younger than seven days blocks manual purge',async()=>{await act(owner);const v=await rpc('st_purge_preview',['project',job.project_id]);assert.equal(v.files,1);assert(new Date(v.not_before)>new Date());await assert.rejects(()=>rpc('st_purge_begin',['project',job.project_id,'永久删除 '+v.title]));});
+ const cleanup=async(k=key,who=sender)=>{await act('','anon');return rpc('st_purge_worker',[k,who]);};
+ await test('automatic cleanup ignores young videos',async()=>assert.equal((await cleanup()).idle,true));
+ await test('worker rejects invalid key and other identity',async()=>{await assert.rejects(()=>cleanup('f'.repeat(64)));await assert.rejects(()=>cleanup(key,other));});
+ await db.exec('RESET ROLE');await db.exec("UPDATE public.st_source_retention SET uploaded_at=now()-interval '8 days',delete_after=now()-interval '1 day'");await db.exec("UPDATE storage.objects SET created_at=now()-interval '8 days'");
+ await test('running or unresolved jobs block cleanup',async()=>{await db.exec('RESET ROLE');await db.query("UPDATE public.st_cloud_jobs SET state='waiting_reconciliation' WHERE id=$1",[a.job_id]);assert.equal((await cleanup()).idle,true);await db.exec('RESET ROLE');await db.query("UPDATE public.st_cloud_jobs SET state='failed' WHERE id=$1",[a.job_id]);});
+
+
+ let lease;
+ await test('mature auto cleanup returns only original input objects',async()=>{for(let i=0;i<4;i++){const next=await cleanup();if(next.objects){lease=next;break;}}assert(lease);assert.equal(lease.objects.length,1);assert.equal(lease.objects[0].bucket_id,'subtitle-inputs');assert(lease.objects[0].name.startsWith('requests/'+r.request_id+'/'));});
+ const authCap=async(cap)=>{await act('','anon');await db.query("SELECT set_config('request.headers',$1,false)",[JSON.stringify({'x-subtitle-purge':cap})]);};
+ await test('no capability cannot delete any object',async()=>{await authCap('wrong');const deleted=await db.query('DELETE FROM storage.objects RETURNING id');assert.equal(deleted.rows.length,0);});
+ await test('capability cannot delete unrelated or newly replaced objects',async()=>{await db.exec('RESET ROLE');await db.query(`INSERT INTO storage.objects(bucket_id,name,owner_id,metadata) VALUES('subtitle-inputs','unrelated.mp4','notify-member','{}')`);await authCap(lease.capability);assert.equal((await db.query("DELETE FROM storage.objects WHERE name='unrelated.mp4' RETURNING id")).rows.length,0);});
+
+ await test('lease revokes immediately on disabled cleanup, gateway or owner suspension',async()=>{
+  for(const sql of ['UPDATE public.st_purge_config SET enabled=false','UPDATE public.st_qq_gateways SET active=false',`UPDATE public.st_members SET state='suspended' WHERE id='${ownerId}'`]){
+   await db.exec('RESET ROLE');await db.exec(sql);await authCap(lease.capability);assert.equal((await db.query('SELECT count(*)::int AS n FROM storage.objects WHERE id=$1',[lease.objects[0].object_id])).rows[0].n,0);
+   await db.exec('RESET ROLE');await db.exec('UPDATE public.st_purge_config SET enabled=true; UPDATE public.st_qq_gateways SET active=true');await db.query("UPDATE public.st_members SET state='active' WHERE id=$1",[ownerId]);
+  }
+ });
+ await test('expired capability cannot delete',async()=>{await db.exec('RESET ROLE');await db.query("UPDATE public.st_purge_jobs SET lease_until=now()-interval '1 second' WHERE id=$1",[lease.job_id]);await authCap(lease.capability);assert.equal((await db.query('DELETE FROM storage.objects WHERE id=$1 RETURNING id',[lease.objects[0].object_id])).rows.length,0);await db.exec('RESET ROLE');await db.query("UPDATE public.st_purge_jobs SET lease_until=now()+interval '1 minute' WHERE id=$1",[lease.job_id]);});
+ await test('exact capability permits deleting exact mature synthetic object via RLS',async()=>{await authCap(lease.capability);const deleted=await db.query('DELETE FROM storage.objects WHERE id=$1 RETURNING id',[lease.objects[0].object_id]);assert.equal(deleted.rows.length,1);});
+ await db.exec('RESET ROLE');await db.query("UPDATE public.st_cloud_jobs SET delivery_files='[{\"name\":\"keep.ass\",\"base64\":\"c3VidGl0bGU=\"}]'::jsonb WHERE id=$1",[a.job_id]);
+ await test('automatic cleanup completes and preserves subtitles and report payloads',async()=>{let completed=false;for(let i=0;i<5;i++){const v=await cleanup();if(v.completed)completed=true;}assert(completed);await db.exec('RESET ROLE');assert.equal((await row('SELECT delivery_files FROM public.st_cloud_jobs WHERE id=$1',[a.job_id])).delivery_files[0].name,'keep.ass');assert((await row("SELECT cleaned_at FROM public.st_source_retention WHERE source_kind='request' AND source_id=$1",[r.request_id])).cleaned_at);});
+ await test('expired source cannot be claimed or requeued',async()=>{await db.exec('RESET ROLE');await assert.rejects(()=>db.query("UPDATE public.st_cloud_jobs SET state='running' WHERE id=$1",[a.job_id]));});
+ let purge;
+ await test('manual purge requires exact typed confirmation and is idempotent',async()=>{await act(owner);const v=await rpc('st_purge_preview',['project',job.project_id]);await assert.rejects(()=>rpc('st_purge_begin',['project',job.project_id,v.title]));purge=await rpc('st_purge_begin',['project',job.project_id,'永久删除 '+v.title]);assert.equal(await rpc('st_purge_begin',['project',job.project_id,'永久删除 '+v.title]),purge);});
+ await test('queued permanent deletion prevents restore',async()=>{await act(owner);await assert.rejects(()=>rpc('st_restore_project',[job.project_id]));});
+ await test('private finalizer inaccessible to members and service role',async()=>{for(const role of ['authenticated','anon','service_role']){await act(owner,role);await assert.rejects(()=>rpc('st_purge_finish',[purge]));}});
+ await test('manual purge completes after files gone, clears payload and cannot restore',async()=>{for(let i=0;i<5;i++)await cleanup();await db.exec('RESET ROLE');assert.equal((await row('SELECT state FROM public.st_purge_jobs WHERE id=$1',[purge])).state,'completed');assert.equal((await row('SELECT delivery_files FROM public.st_cloud_jobs WHERE id=$1',[a.job_id])).delivery_files,null);await act(owner);await assert.rejects(()=>rpc('st_restore_project',[job.project_id]));assert(!(await rpc('st_deleted_items')).projects.some(p=>p.id===job.project_id));});
+ await test('purge creates no provider reservations or point changes',async()=>{await db.exec('RESET ROLE');assert.equal(Number((await row('SELECT count(*) AS n FROM public.st_cloud_request_reservations')).n),0);assert.equal(Number((await row('SELECT count(*) AS n FROM public.st_point_entries')).n),1);assert(Number((await row("SELECT count(*) AS n FROM public.st_audit_events WHERE entity_table='st_purge_jobs'")).n)>0);});
+
+ await test('manual purge redacts inline subtitles, review and agent summary but keeps contribution and points',async()=>{await db.exec('RESET ROLE');assert.equal((await row('SELECT content_text,notes FROM public.st_deliveries WHERE id=$1',[inline])).content_text,'');assert.equal((await row('SELECT feedback FROM public.st_reviews WHERE id=$1',[review])).feedback,'');assert.equal((await row('SELECT summary FROM public.st_agent_runs WHERE id=$1',[agent])).summary,'');assert.equal((await row('SELECT count(*)::int AS n FROM public.st_contributions WHERE id=$1',[contribution])).n,1);});
+ await test('finalized purge does not permit later mutations of preserved history',async()=>{await db.exec('RESET ROLE');await assert.rejects(()=>db.query("UPDATE public.st_point_entries SET points=2 WHERE contribution_id=$1",[contribution]));await assert.rejects(()=>db.query("UPDATE public.st_deliveries SET notes='changed' WHERE id=$1",[inline]));});
+
+ await db.exec('RESET ROLE');
+ const imageProject=(await row("INSERT INTO public.st_projects(title,created_by) VALUES('image purge fixture',$1) RETURNING id",[ownerId])).id;
+ const imageTask=(await row("INSERT INTO public.st_tasks(project_id,title,kind,created_by) VALUES($1,'fixture cover','cover',$2) RETURNING id",[imageProject,ownerId])).id;
+ const uploadId='50000000-0000-4000-8000-000000000001',imagePath=imageProject+'/'+imageTask+'/'+uploadId+'.png';
+ await db.query("INSERT INTO public.st_uploads(id,task_id,project_id,member_id,file_name,object_path,mime_type,byte_size,sha256,chunk_size) VALUES($1,$2,$3,$4,'fixture.png',$5,'image/png',1000,$6,4194304)",[uploadId,imageTask,imageProject,ownerId,imagePath,'c'.repeat(64)]);
+ await db.query(`INSERT INTO storage.objects(bucket_id,name,owner_id,metadata) VALUES('subtitle-deliveries',$1,'fixture-owner','{"size":1000,"mimetype":"image/png"}'),('subtitle-deliveries',$2,'fixture-owner','{"size":1000,"mimetype":"image/png"}')`,[imagePath+'/part-0000',imagePath.replace('.png','Xpng')+'/part-0000']);
+ await act(owner);await rpc('st_delete_project',[imageProject,'image purge fixture']);
+ await test('manual purge includes exact incomplete image chunks, never similar prefixes',async()=>{await act(owner);const v=await rpc('st_purge_preview',['project',imageProject]);assert.equal(v.files,1);await rpc('st_purge_begin',['project',imageProject,'永久删除 image purge fixture']);});
+ await test('image purge capability deletes only exact manifest identity',async()=>{let cap;for(let i=0;i<5;i++){const v=await cleanup();if(v.objects){cap=v;break;}}assert(cap);assert.equal(cap.objects[0].name,imagePath+'/part-0000');await authCap(cap.capability);assert.equal((await db.query('DELETE FROM storage.objects WHERE bucket_id=$1 RETURNING id',['subtitle-deliveries'])).rows.length,1);await db.exec('RESET ROLE');assert.equal((await row('SELECT count(*)::int AS n FROM storage.objects WHERE name=$1',[imagePath.replace('.png','Xpng')+'/part-0000'])).n,1);});
+ await test('task purge cannot include another task or whole project',async()=>{await db.exec('RESET ROLE');const count=(await row("SELECT count(*)::int AS n FROM public.st_purge_inventory('task',$1)",[imageTask])).n;assert.equal(count,0);});
+ await fs.writeFile('HISTORICAL_SOURCE_PATH',JSON.stringify({engine:'PGlite',live:false,results},null,2));
+
+}finally{await db.close();}
