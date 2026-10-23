@@ -777,15 +777,15 @@
       "path": "package-lock.json",
       "component": "project",
       "bytes": 650,
-      "sha256": "a8350a430a8a9e9b696bc819ff86290a94d8448e63898ba70186548f23c18d6f",
-      "git_blob_sha": "0063c153062c77e5868eb5532143b070ccf7064a"
+      "sha256": "fe35a5654add03457dcd9843c359d9e80d8e3de3fa5c948a2dddc8bd5634b99b",
+      "git_blob_sha": "fec0d43f9ece5d8f108c95cb8f6aed554d9b2969"
     },
     {
       "path": "package.json",
       "component": "project",
-      "bytes": 680,
-      "sha256": "81106d0a7a4eae8630a99fe6319963c911347458ff2455164fa0d03d99911b28",
-      "git_blob_sha": "4eb3437f35fcae6a6c86306d447a55e08399a894"
+      "bytes": 688,
+      "sha256": "c631f07dec39763d99c4fa352a1310734ee629a7c497064705e6122e071544fc",
+      "git_blob_sha": "768ca26779e84f54ecde0c8361126ac761044860"
     },
     {
       "path": "requirements-test.txt",
@@ -1490,9 +1490,9 @@
     {
       "path": "worker/test_cloud.py",
       "component": "worker",
-      "bytes": 18263,
-      "sha256": "dfa0ba257d8dd900ddac50a8d9bd87e87b4e5c1646a4acde14d2dc3dba496ebb",
-      "git_blob_sha": "b85b259d9f69dc21ee3e75b6fe997b8568306831"
+      "bytes": 18665,
+      "sha256": "8d9cb78733b017a0d53317c92997d5803c067f252bdab5cbcfd39507b765d857",
+      "git_blob_sha": "21bdd57368d03c2b25e568e15ae43efd4f5e7381"
     },
     {
       "path": "worker/test_cloud_clips_ui.cjs",
