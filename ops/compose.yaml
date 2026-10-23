@@ -1,0 +1,19 @@
+name: subtitlebot
+services:
+  astrbot:
+    image: m.daocloud.io/docker.io/soulter/astrbot:v4.29.1@sha256:a140a326163ac5f82f62153f033cddeac74e38e4ee1809c6e333e950ff19edc4
+    container_name: subtitle-astrbot
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "127.0.0.1:6185:6185"
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - ./data:/AstrBot/data
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
