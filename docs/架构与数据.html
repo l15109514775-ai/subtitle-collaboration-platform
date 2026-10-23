@@ -1,0 +1,48 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>架构与数据 · 字幕协作台</title><link rel="stylesheet" href="handbook.css"></head><body><main><nav><a href="从零搭建.html">从零搭建</a> · <a href="使用手册.html">日常使用</a> · <a href="维护与排错.html">维护排错</a> · <a href="验证状态.html">验证状态</a></nav><h1>系统如何工作</h1>
+<h2>三个运行位置</h2>
+<table>
+<tr><th>位置</th><th>运行内容</th><th>不应持有的权限</th></tr>
+<tr><td>CloudBase</td><td>静态网站、身份认证、PostgreSQL 业务函数、私有文件</td><td>浏览器不持有数据库管理员 Key</td></tr>
+<tr><td>Codex Cloud</td><td>指定作业的下载、识别、翻译、质量检查和回传</td><td>不能改成员角色、批准自己稿件、发人工积分</td></tr>
+<tr><td>腾讯云服务器或其他 Linux 主机</td><td>AstrBot、QQ 身份映射、定时通知、受限清理</td><td>不使用组长网页登录令牌冒充组长</td></tr>
+</table>
+<p>网站是原生 HTML/CSS/JavaScript，不依赖一个常驻 Node 网站服务器。后端主要是 PostgreSQL 函数，由 CloudBase 的 REST/RPC 网关调用。<code>SECURITY DEFINER</code> 函数是受控业务入口，函数内必须检查调用身份、项目归属和状态；并不是给前端直接开放整张表。</p>
+<p>CloudBase 的 PG 模式使用 GRANT 与 RLS 两层控制；身份令牌把当前用户带到数据库。<code>service_role</code> 能绕过 RLS，不能放进网页或普通工作器。本仓库同时保留旧部署与文档所示身份表差异的兼容读取，但仍需在你自己的环境验收。<a href="https://docs.cloudbase.net/authentication-v2/auth/auth-pg">官方 PG 身份与权限说明</a></p>
+<h2>主要数据</h2>
+<table>
+<tr><th>表或表组</th><th>用途</th></tr>
+<tr><td><code>st_members</code>、<code>st_roles</code>、<code>st_member_roles</code></td><td>成员、全局角色与状态</td></tr>
+<tr><td><code>st_project_members</code>、<code>st_projects</code></td><td>项目与项目内身份</td></tr>
+<tr><td><code>st_tasks</code>、<code>st_claims</code></td><td>任务和认领历史；每项任务最多一个有效认领</td></tr>
+<tr><td><code>st_uploads</code>、<code>st_artifacts</code>、<code>storage.objects</code></td><td>上传、文件归属、分片与校验</td></tr>
+<tr><td><code>st_deliveries</code>、<code>st_reviews</code></td><td>不覆盖的交付版本和审核记录</td></tr>
+<tr><td><code>st_contributions</code>、<code>st_point_entries</code>、修正记录</td><td>可核验贡献、积分和更正历史</td></tr>
+<tr><td><code>st_cloud_workers</code>、<code>st_cloud_jobs</code></td><td>执行身份、作业授权、租约和请求额度</td></tr>
+<tr><td><code>st_subtitle_requests</code>、通知事件表</td><td>组员申请、审批、通知来源</td></tr>
+<tr><td><code>st_qq_gateways</code>、<code>st_qq_links</code>、<code>st_qq_codes</code></td><td>受限机器人身份、成员映射、一次性码</td></tr>
+<tr><td><code>st_source_retention</code>、<code>st_purge_jobs</code>、<code>st_purge_objects</code></td><td>原视频保留期、精确文件清理任务</td></tr>
+<tr><td><code>st_audit_events</code></td><td>关键业务操作的审计记录</td></tr>
+</table>
+<p>迁移清单见 <code>database/migrations.json</code>。编号不是连续序号：有些旧编号是测试或仅修复特定历史数据，未作为新环境安装的一部分。三个 <code>recorded_*</code> 文件恢复了之前在线修正的函数定义，<strong>仅含定义，不含生产数据</strong>。它们让首次安装不再依赖私人数据库快照。</p>
+<h2>权限矩阵</h2>
+<p>“允许”仍需要满足项目归属、任务负责人、状态等条件。</p>
+<table>
+<tr><th>能力</th><th>普通成员</th><th>项目审核员</th><th>项目负责人</th><th>组长</th><th>Cloud 工作器</th></tr>
+<tr><td>查看开放工作、认领</td><td>是</td><td>是</td><td>是</td><td>是</td><td>否</td></tr>
+<tr><td>查看项目内部资料</td><td>已有项目权限</td><td>本项目</td><td>本项目</td><td>按业务管理范围</td><td>仅授权作业</td></tr>
+<tr><td>提交本人交付</td><td>是</td><td>是</td><td>是</td><td>是</td><td>仅 AI 交付接口</td></tr>
+<tr><td>审核交付</td><td>否</td><td>本项目且不是本人稿件</td><td>本项目且不是本人稿件</td><td>仍受自审限制</td><td>否</td></tr>
+<tr><td>修改项目/任务</td><td>按本人/项目规则</td><td>按项目规则</td><td>本项目</td><td>是</td><td>否</td></tr>
+<tr><td>修改成员身份、积分修正</td><td>否</td><td>否</td><td>否</td><td>受控且审计</td><td>否</td></tr>
+<tr><td>创建/撤销 Cloud 身份</td><td>否</td><td>否</td><td>否</td><td>是</td><td>否</td></tr>
+<tr><td>永久删除</td><td>否</td><td>否</td><td>否</td><td>仅指定的一名组长</td><td>否</td></tr>
+</table>
+<p>QQ 网关只可通过固定接口查询必要信息、读取通知和处理明确授权的精确清理任务；它没有通用 SQL 执行接口。普通聊天模型不会收到绑定码和业务密钥，固定命令先于模型处理。</p>
+<h2>文件和费用的一致性</h2>
+<p>视频按分片上传，登记 SHA-256、大小和归属。领取作业后工作器重新核验文件，并验证真实时长。下载来源只接受配置的 HTTPS 网关；认证请求不跟随重定向。</p>
+<p>每次付费请求前先取得服务端额度预留和有效租约，再记录本地账本。断线后不确定某次请求是否已经扣费时，任务停在待核对状态，不自动重复发送。换机器或删除本地目录不能恢复服务端额度。</p>
+<p>正常交付包含九个私有字幕/报告文件，精确名单由 <code>worker/delivery_contract.py</code> 定义。回传失败与模型结果不确定不同：仅在检查点和作业状态允许时，才使用只回传模式。工作器不会因为上传失败重新翻译一遍。</p>
+<p>人工审核、贡献和积分由数据库事务管理。积分更正保留修正记录，不悄悄重写历史。AI 交付仍需要人工检查，不自动算作人工劳动。</p>
+<h2>QQ 为什么不是一直查数据库</h2>
+<p><code>schedule.py</code> 每 15 秒只看服务器本地时钟；到了每天四个时段才通过固定接口查询云数据库。每个时段在本地 SQLite 中登记一次，防止重启或重复进程造成同一时段反复轮询。消息结果不确定时暂停相应通道，保留回执供人工核查。</p>
+<p>定时检查减少调用量，但不会保证 PostgreSQL 本身零计算费用。数据库费用、模型请求费和机器人服务器费用要分别看。</p><hr><p>开源字幕协作台 · AGPL-3.0-only · 文档源文件与本页放在同一目录。</p></main></body></html>
