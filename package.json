@@ -1,0 +1,13 @@
+{
+  "name": "subtitle-collaboration-platform",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "description": "Community subtitle collaboration, controlled Cloud workers and QQ notifications",
+  "scripts": {
+    "test:database": "node tests/database/smoke.mjs && node tests/database/installer.mjs && node tests/ported/identities/database.mjs",
+    "test:ui": "node --test tests/ported/credits/site.cjs tests/ported/identities/site.cjs tests/ported/password-reset/reset.cjs tests/ported/priority/site.cjs tests/ported/requests/site.cjs",
+    "test": "npm run test:database && npm run test:ui"
+  },
+  "devDependencies": {"@electric-sql/pglite": "0.5.10"}
+}

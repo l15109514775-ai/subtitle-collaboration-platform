@@ -1,0 +1,8 @@
+{
+  "environment_id": "your-environment-id",
+  "website_url": "https://your-site.tcloudbaseapp.com/",
+  "cloud_environment_name": "subtitle-delivery-20min-active",
+  "text_api_url": "https://your-authorized-provider.example/v1",
+  "text_model": "gpt-6-luna",
+  "owner_auth_subject": "COPY_YOUR_AUTH_USER_ID_HERE"
+}
