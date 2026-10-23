@@ -10,7 +10,7 @@ import subprocess
 import tempfile
 import unittest
 import wave
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import billing
 import qwen_asr
@@ -87,13 +87,21 @@ class CloudWorkflowTests(unittest.TestCase):
                 avg_logprob=0, no_speech_prob=0, words=[])
             return iter([segment]), None
 
-        with (patch('faster_whisper.WhisperModel') as model,
-              patch('av.open', side_effect=AssertionError('PyAV file decoder must not run'))):
+        # This test checks our PCM boundary, not the inference backend itself.
+        # Install explicit test doubles so a clean offline test environment does
+        # not need either large runtime package just to resolve a mock target.
+        model = Mock()
+        decoder = Mock(side_effect=AssertionError('PyAV file decoder must not run'))
+        with patch.dict('sys.modules', {
+            'faster_whisper': SimpleNamespace(WhisperModel=model),
+            'av': SimpleNamespace(open=decoder),
+        }):
             model.return_value.transcribe.side_effect = recognize
             cfg = dict(self.cfg, whisper_model_path=str(model_path))
             rows = worker.transcribe(audio, job, cfg)
             self.assertEqual(worker.transcribe(audio, job, cfg), rows)
         self.assertEqual(len(received), 1)
+        decoder.assert_not_called()
         self.assertEqual(len(rows), 1)
         self.assertFalse((job / 'asr/00000.wav').exists())
 
