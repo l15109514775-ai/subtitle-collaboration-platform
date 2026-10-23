@@ -1,0 +1,12 @@
+
+#cloud-panel .cloud-next{margin:12px 0;padding:14px;border-left:3px solid #326ddd;background:#f0f5ff;border-radius:8px}
+#cloud-panel .cloud-next p{margin:6px 0;line-height:1.65}
+#cloud-panel .cloud-stale{color:#885b00;font-weight:600}
+#cloud-panel .cloud-evidence{margin:12px 0;padding:12px;border:1px solid #dce5f6;border-radius:8px}
+#cloud-panel .cloud-evidence summary{cursor:pointer;font-weight:600}
+#cloud-panel .cloud-report{line-height:1.65;overflow-wrap:anywhere}
+#cloud-panel .cloud-report:empty{display:none}
+#cloud-panel .cloud-report-scroll{max-height:420px;overflow:auto}
+#cloud-panel table{border-collapse:collapse;width:100%;font-size:14px}
+#cloud-panel th,#cloud-panel td{text-align:left;border-bottom:1px solid #dce5f6;padding:9px;vertical-align:top}
+#cloud-panel .cloud-report th:nth-child(2),#cloud-panel .cloud-report td:nth-child(2){min-width:115px}

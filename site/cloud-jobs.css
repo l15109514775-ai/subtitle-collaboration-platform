@@ -1,0 +1,14 @@
+#cloud-panel{margin-bottom:28px;min-width:0}
+#cloud-panel .section-heading{display:flex;justify-content:space-between;align-items:center;gap:16px}
+#cloud-panel h2{margin:6px 0 12px}
+#cloud-panel details{margin:18px 0;padding:16px;border:1px solid #dce5f6;border-radius:12px}
+#cloud-panel summary{cursor:pointer;font-weight:700;color:#174ba0}
+#cloud-panel form{margin-top:18px}
+#cloud-panel .toolbar>label{flex:1;min-width:130px}
+#cloud-panel input[type=checkbox]{width:auto;margin-right:8px}
+#cloud-panel .version{margin-top:18px;overflow-wrap:anywhere}
+#cloud-panel .version header{flex-wrap:wrap;gap:10px}
+#cloud-panel .version button{margin:6px 8px 2px 0}
+#cloud-panel small{display:block;overflow-wrap:anywhere}
+#cloud-panel .badge{white-space:normal}
+@media(max-width:600px){#cloud-panel details{padding:12px}#cloud-panel .toolbar{flex-wrap:wrap}#cloud-panel .section-heading{align-items:flex-start}}

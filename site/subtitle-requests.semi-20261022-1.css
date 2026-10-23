@@ -1,0 +1,12 @@
+
+#subtitle-request-panel{margin-bottom:28px;min-width:0}
+#subtitle-request-panel details{margin:18px 0;padding:16px;border:1px solid #dce5f6;border-radius:12px}
+#subtitle-request-panel summary{cursor:pointer;font-weight:700;color:#174ba0}
+#subtitle-request-panel form{margin-top:18px}
+#subtitle-request-panel .version{margin-top:18px;overflow-wrap:anywhere}
+#subtitle-request-panel .version header{flex-wrap:wrap;gap:10px}
+#subtitle-request-panel .version button{margin:6px 8px 2px 0}
+#subtitle-request-panel small{display:block;overflow-wrap:anywhere}
+#subtitle-request-panel .section-heading{display:flex;justify-content:space-between;gap:16px;align-items:center}
+#subtitle-approval-dialog{max-width:620px;width:calc(100% - 32px)}
+#subtitle-approval-dialog input[type=checkbox]{width:auto;margin-right:8px}
