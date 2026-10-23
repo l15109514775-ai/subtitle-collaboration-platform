@@ -1,0 +1,151 @@
+import fs from 'node:fs/promises';
+import assert from 'node:assert/strict';
+import {bootstrap} from 'file:///HISTORICAL_SOURCE_PATH';
+const root=new URL('../',import.meta.url),db=await bootstrap(),results=[];
+try{
+ for(const file of [
+  'HISTORICAL_SOURCE_PATH',
+  'HISTORICAL_SOURCE_PATH',
+  'HISTORICAL_SOURCE_PATH',
+  'HISTORICAL_SOURCE_PATH'
+ ])await db.exec(await fs.readFile(file,'utf8'));
+ // Execute the exact release transaction against the saved public function
+ // definitions and the same private-storage preconditions as the live service.
+ const before=JSON.parse(await fs.readFile(new URL('deployment/database-before-exact.json',root),'utf8'));
+ for(const f of before.functions)await db.exec(f.definition);
+ await db.exec('ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY');
+ await db.exec(await fs.readFile(new URL('deployment/039-release.sql',root),'utf8'));
+ const row=async(sql,args=[])=> (await db.query(sql,args)).rows[0];
+ const rpc=async(name,args=[])=> (await row(`SELECT public.${name}(${args.map((_,i)=>'$'+(i+1)).join(',')}) AS result`,args)).result;
+ const owner=(await row("SELECT m.auth_subject FROM public.st_members m JOIN public.st_member_roles r ON r.member_id=m.id WHERE r.role_code='owner' LIMIT 1")).auth_subject;
+ const act=async(subject,role='authenticated')=>{await db.exec('RESET ROLE');await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)",[subject]);await db.exec('SET ROLE '+role);};
+ const test=async(name,fn)=>{await fn();results.push({name,result:'pass'});console.log('PASS '+name);};
+ const members={};
+ for(const name of ['member-a','member-b']){
+  const m=await row('INSERT INTO public.st_members(auth_subject,display_name) VALUES($1,$2) RETURNING id',[name,name]);members[name]=m.id;
+  await db.query("INSERT INTO public.st_member_roles(member_id,role_code) VALUES($1,'contributor')",[m.id]);
+ }
+ await act(owner);const worker=await rpc('st_cloud_worker_create',['synthetic-semiautomatic']);
+ const prepare=async(name='member-a',sha='a',seconds=60)=>{await act(name);return rpc('st_subtitle_request_prepare',['Synthetic intake','00:00–01:00','synthetic metadata only','fixture.mp4','video/mp4',1000,sha.repeat(64),seconds]);};
+ const upload=async(r,name='member-a')=>{await db.exec('RESET ROLE');await db.query("INSERT INTO storage.objects(bucket_id,name,owner_id,metadata) VALUES('subtitle-inputs',$1,$2,'{\"size\":1000,\"mimetype\":\"video/mp4\"}')",['requests/'+r.request_id+'/part-0000',name]);};
+ const sources=r=>[{path:'requests/'+r.request_id+'/part-0000',byte_size:1000,url:'https://example-env.api.tcloudbasegateway.com/v1/storages/object/sign/subtitle-inputs/requests/'+r.request_id+'/part-0000?token=synthetic-only'}];
+ const approve=async(r,src=sources(r),seconds=1200,text=400,qwen=40)=>{await act(owner);return rpc('st_subtitle_request_decide',[r.request_id,'approved',worker.id,seconds,text,qwen,'',src]);};
+ let r,approved,claim;
+ await test('member registration creates no executable job/project or provider reservation',async()=>{
+  await db.exec('RESET ROLE');const before=await row('SELECT (SELECT count(*) FROM public.st_projects) AS projects,(SELECT count(*) FROM public.st_cloud_jobs) AS jobs');
+  r=await prepare();await db.exec('RESET ROLE');assert.deepEqual(await row('SELECT (SELECT count(*) FROM public.st_projects) AS projects,(SELECT count(*) FROM public.st_cloud_jobs) AS jobs'),before);
+  assert.equal(Number((await row('SELECT count(*) AS n FROM public.st_cloud_request_reservations')).n),0);
+ });
+ await test('another member cannot read, upload, submit, withdraw, or retrieve instructions for this intake',async()=>{
+  await act('member-b');assert.equal((await rpc('st_subtitle_requests_view')).requests.length,0);
+  assert.equal((await rpc('st_subtitle_requests_view',[r.request_id])).requests.length,0);
+  assert.equal(await rpc('st_cloud_source_read',['requests/'+r.request_id+'/part-0000']),false);
+  assert.equal(await rpc('st_cloud_source_write',['requests/'+r.request_id+'/part-0000']),false);
+  for(const [fn,args] of [['st_subtitle_request_submit',[r.request_id]],['st_subtitle_request_withdraw',[r.request_id]],['st_subtitle_request_packet',[r.request_id]]])await assert.rejects(()=>rpc(fn,args));
+ });
+ await test('only uploader can write exact registered chunks; owner can read but cannot overwrite',async()=>{
+  await act('member-a');assert.equal(await rpc('st_cloud_source_write',['requests/'+r.request_id+'/part-0000']),true);
+  assert.equal(await rpc('st_cloud_source_write',['requests/'+r.request_id+'/part-0001']),false);
+  assert.equal(await rpc('st_cloud_source_write',['requests/'+r.request_id+'/../part-0000']),false);
+  await act(owner);assert.equal(await rpc('st_cloud_source_write',['requests/'+r.request_id+'/part-0000']),false);
+  assert.equal(await rpc('st_cloud_source_read',['requests/'+r.request_id+'/part-0000']),true);
+ });
+ await test('missing, wrong-size and wrong-owner storage objects cannot be submitted',async()=>{
+  await act('member-a');await assert.rejects(()=>rpc('st_subtitle_request_submit',[r.request_id]));
+  await upload(r,'member-b');await act('member-a');await assert.rejects(()=>rpc('st_subtitle_request_submit',[r.request_id]));
+  await db.exec('RESET ROLE');await db.query("UPDATE storage.objects SET owner_id='member-a',metadata='{\"size\":999,\"mimetype\":\"video/mp4\"}' WHERE name=$1",['requests/'+r.request_id+'/part-0000']);
+  await act('member-a');await assert.rejects(()=>rpc('st_subtitle_request_submit',[r.request_id]));
+  await db.exec('RESET ROLE');await db.query("UPDATE storage.objects SET metadata='{\"size\":1000,\"mimetype\":\"video/mp4\"}' WHERE name=$1",['requests/'+r.request_id+'/part-0000']);
+ });
+ await test('submission is idempotent, locks further uploads, queues one event and no executable job',async()=>{
+  await act('member-a');assert.equal((await rpc('st_subtitle_request_submit',[r.request_id])).state,'pending');await rpc('st_subtitle_request_submit',[r.request_id]);
+  assert.equal(await rpc('st_cloud_source_write',['requests/'+r.request_id+'/part-0000']),false);
+  await db.exec('RESET ROLE');assert.equal(Number((await row('SELECT count(*) AS n FROM public.st_subtitle_notifications WHERE request_id=$1',[r.request_id])).n),1);
+  assert.equal(Number((await row('SELECT count(*) AS n FROM public.st_cloud_jobs')).n),0);
+ });
+ await test('member cannot approve themselves or inspect notification queue',async()=>{
+  await act('member-a');await assert.rejects(()=>rpc('st_subtitle_request_decide',[r.request_id,'approved',worker.id,1200,400,40,'',sources(r)]));
+  await assert.rejects(()=>rpc('st_subtitle_notification_queue'));
+  await act(owner);assert.equal((await rpc('st_subtitle_request_packet',[r.request_id])).instruction,undefined);
+ });
+ await test('approval rejects excess budgets, too-small duration and unrelated signed URLs atomically',async()=>{
+  await assert.rejects(()=>approve(r,sources(r),1201));await assert.rejects(()=>approve(r,sources(r),59));
+  await assert.rejects(()=>approve(r,sources(r),1200,401));await assert.rejects(()=>approve(r,sources(r),1200,400,41));
+  await assert.rejects(()=>approve(r,[{...sources(r)[0],url:'https://evil.example/?x=1'}]));
+  await assert.rejects(()=>approve(r,[{...sources(r)[0],url:sources(r)[0].url.replace(r.request_id,'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa')} ]));
+  await db.exec('RESET ROLE');assert.equal(Number((await row('SELECT count(*) AS n FROM public.st_cloud_jobs')).n),0);
+ });
+ await test('owner approval creates exactly one per-job-v1 job and immutable notification; no provider call',async()=>{
+  approved=await approve(r);const repeat=await approve(r);assert.equal(repeat.job_id,approved.job_id);
+  await db.exec('RESET ROLE');const j=await row('SELECT * FROM public.st_cloud_jobs WHERE id=$1',[approved.job_id]);
+  assert.equal(j.state,'queued');assert.equal(j.workflow_version,'per-job-v1');assert.equal(j.requested_by,members['member-a']);assert.equal(j.max_text_requests,400);
+  assert.equal(Number((await row("SELECT count(*) AS n FROM public.st_subtitle_notifications WHERE request_id=$1 AND event='approved'",[r.request_id])).n),1);
+  assert.equal(Number((await row('SELECT count(*) AS n FROM public.st_cloud_request_reservations')).n),0);
+ });
+ await test('uploader sees their approved project and files scope; unrelated member remains excluded',async()=>{
+  await act('member-a');const j=(await rpc('st_cloud_jobs_view',[null])).jobs.find(x=>x.id===approved.job_id);assert(j);
+  assert.equal(await rpc('st_cloud_source_read',['requests/'+r.request_id+'/part-0000']),true);
+  await act('member-b');assert.equal((await rpc('st_cloud_jobs_view',[null])).jobs.some(x=>x.id===approved.job_id),false);
+ });
+ await test('notification packet exposes only safe summary and exact fixed instruction, never source URL/hash/token',async()=>{
+  await act(owner);const packet=await rpc('st_subtitle_request_packet',[r.request_id]);
+  assert(packet.instruction.includes('--job-id '+approved.job_id));assert(!JSON.stringify(packet).includes('synthetic-only'));assert(!JSON.stringify(packet).includes('sha256'));assert(!JSON.stringify(packet).includes('sources'));
+  const queue=await rpc('st_subtitle_notification_queue');assert.equal(queue.delivery_enabled,false);assert.equal(queue.events.length,2);
+ });
+ await test('expired queued source suppresses execution instruction, refresh preserves same job and limits',async()=>{
+  await db.exec('RESET ROLE');await db.query("UPDATE public.st_cloud_jobs SET source_expires_at=now()-interval '1 hour' WHERE id=$1",[approved.job_id]);
+  await act(owner);assert.equal((await rpc('st_subtitle_request_packet',[r.request_id])).instruction,undefined);
+  const refreshed=await rpc('st_subtitle_request_refresh',[r.request_id,sources(r)]);assert.equal(refreshed.job_id,approved.job_id);
+  assert((await rpc('st_subtitle_request_packet',[r.request_id])).instruction);
+ });
+ await test('existing published worker can claim approved intake and reserve per-job quota with unchanged protocol',async()=>{
+  await act('','anon');claim=await rpc('st_cloud_worker_call',[worker.key,'claim',approved.job_id,{workflow_version:'per-job-v1'}]);
+  assert.equal(claim.state,'running');assert.equal(claim.sources[0].path,sources(r)[0].path);
+  const reserved=await rpc('st_cloud_worker_call',[worker.key,'reserve',approved.job_id,{lease_id:claim.lease_id,provider:'text',request_id:'10000000-0000-4000-8000-000000000001'}]);
+  assert.equal(reserved.counts.text,1);
+  await act(owner);await assert.rejects(()=>rpc('st_subtitle_request_refresh',[r.request_id,sources(r)]));
+  assert.equal((await rpc('st_subtitle_request_packet',[r.request_id])).instruction,undefined);
+ });
+ await test('rejection requires reason and prevents later approval without orphan business rows',async()=>{
+  const rejected=await prepare('member-b','b');await upload(rejected,'member-b');await act('member-b');await rpc('st_subtitle_request_submit',[rejected.request_id]);
+  await act(owner);await assert.rejects(()=>rpc('st_subtitle_request_decide',[rejected.request_id,'rejected']));
+  await rpc('st_subtitle_request_decide',[rejected.request_id,'rejected',null,1200,400,40,'synthetic reason']);await assert.rejects(()=>approve(rejected));
+  await act('member-b');assert.equal(await rpc('st_cloud_source_read',['requests/'+rejected.request_id+'/part-0000']),false);
+ });
+ await test('withdrawn/expired/inactive member requests cannot become executable',async()=>{
+  const withdrawn=await prepare('member-b','c');await rpc('st_subtitle_request_withdraw',[withdrawn.request_id]);await assert.rejects(()=>approve(withdrawn));
+  const expired=await prepare('member-b','d');await upload(expired,'member-b');await db.query("UPDATE public.st_subtitle_requests SET upload_until=now()-interval '1 hour' WHERE id=$1",[expired.request_id]);
+  await act('member-b');await assert.rejects(()=>rpc('st_subtitle_request_submit',[expired.request_id]));await rpc('st_subtitle_request_withdraw',[expired.request_id]);
+  const suspended=await prepare('member-b','e');await upload(suspended,'member-b');await act('member-b');await rpc('st_subtitle_request_submit',[suspended.request_id]);
+  await db.exec('RESET ROLE');await db.query("UPDATE public.st_members SET state='suspended' WHERE id=$1",[members['member-b']]);
+  await assert.rejects(()=>approve(suspended));await act('member-b');await assert.rejects(()=>rpc('st_subtitle_requests_view'));
+ });
+ await test('member pending admission cap and 20-minute server limit enforce before row creation',async()=>{
+  await assert.rejects(()=>prepare('member-a','f',1201));
+  for(const sha of ['1','2','3'])await prepare('member-a',sha);
+  await assert.rejects(()=>prepare('member-a','4'));
+ });
+ await test('anonymous/member/service_role cannot bypass RLS via tables or private validator',async()=>{
+  for(const [subject,role] of [['','anon'],['member-a','authenticated'],['','service_role']]){
+   await act(subject,role);await assert.rejects(()=>db.query('SELECT * FROM public.st_subtitle_requests'));await assert.rejects(()=>db.query('SELECT * FROM public.st_subtitle_notifications'));await assert.rejects(()=>rpc('st_subtitle_source_check',[r.request_id]));
+  }
+  await db.exec('RESET ROLE');await assert.rejects(()=>db.query('DELETE FROM public.st_subtitle_notifications WHERE request_id=$1',[r.request_id]));
+ });
+ await test('new private tables have RLS and no service bypass grants; human points remain zero',async()=>{
+  await db.exec('RESET ROLE');const meta=await db.query("SELECT relname,relrowsecurity,has_table_privilege('service_role',oid,'SELECT') AS service_read FROM pg_class WHERE relname IN ('st_subtitle_requests','st_subtitle_notifications')");
+  assert.equal(meta.rows.length,2);assert(meta.rows.every(x=>x.relrowsecurity&&!x.service_read));
+  assert.equal(Number((await row('SELECT count(*) AS n FROM public.st_point_entries')).n),0);
+ });
+ await test('legacy nine-file publication remains compatible after storage permission extension',async()=>{
+  await db.exec('RESET ROLE');await db.exec(await fs.readFile('HISTORICAL_SOURCE_PATH','utf8'));
+ });
+ await test('storage RLS enforces exact uploader INSERT policy and owner SELECT policy',async()=>{
+  await db.exec('RESET ROLE');await db.exec('ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY');
+  const own=await rpc('st_cloud_source_write',['requests/'+r.request_id+'/part-0000']);assert.equal(own,false);
+  await act('member-a');const visible=await db.query("SELECT name FROM storage.objects WHERE bucket_id='subtitle-inputs'");
+  assert(visible.rows.some(x=>x.name===sources(r)[0].path));
+  await assert.rejects(()=>db.query("INSERT INTO storage.objects(bucket_id,name,owner_id,metadata) VALUES('subtitle-inputs','requests/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/part-0000','member-a','{}')"));
+  await act('','anon');assert.equal((await db.query("SELECT name FROM storage.objects WHERE bucket_id='subtitle-inputs'")).rows.length,0);
+ });
+ await fs.writeFile(new URL('tests/database-results.json',root),JSON.stringify({live:false,engine:'PGlite PostgreSQL',results,limitations:['Synthetic auth/storage metadata; no CloudBase bytes or JWT','Single connection: no true parallel race test','No paid model or actual video processing']},null,2));
+}finally{await db.close();}

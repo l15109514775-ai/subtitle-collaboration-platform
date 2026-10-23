@@ -1,0 +1,34 @@
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+
+task = Path(__file__).resolve().parent
+old = task.parent.parent / 'subtitle-production-flow' / 'site'
+new = task.parent / 'site'
+class Handler(SimpleHTTPRequestHandler):
+    def translate_path(self, path):
+        clean = path.split('?', 1)[0]
+        if clean in ('/hash-worker.js', '/sha256.min.js'):
+            base, name = old, clean.lstrip('/')
+        elif clean.startswith('/assets/'):
+            base, name = old, clean.removeprefix('/assets/')
+        elif clean.startswith('/new/'):
+            base, name = new, clean.removeprefix('/new/')
+        else:
+            base, name = task, clean.lstrip('/') or 'preview.html'
+        resolved = (base / name).resolve()
+        if not resolved.is_relative_to(base.resolve()):
+            return str(task / 'not-found')
+        return str(resolved)
+    def log_message(self, *args):
+        pass
+    def do_POST(self):
+        size = int(self.headers.get('Content-Length', '0'))
+        if not self.path.startswith('/v1/storages/object/subtitle-inputs/requests/') or not 0 < size <= 4194304:
+            self.send_error(400)
+            return
+        self.rfile.read(size)  # Synthetic preview only: discard bytes, no filesystem or cloud writes.
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        self.wfile.write(b'{}')
+ThreadingHTTPServer(('127.0.0.1', 8769), Handler).serve_forever()
