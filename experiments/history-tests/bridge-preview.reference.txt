@@ -1,0 +1,16 @@
+from http.server import SimpleHTTPRequestHandler,ThreadingHTTPServer
+from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]
+class Handler(SimpleHTTPRequestHandler):
+    def do_GET(self):
+        route=self.path.split('?')[0]
+        files={'/':ROOT/'tests/preview.html','/preview-fixture.js':ROOT/'tests/preview-fixture.js',
+               '/qq-binding.bridge-20261022-1.js':ROOT/'site/qq-binding.bridge-20261022-1.js',
+               '/base/style.css':Path('HISTORICAL_SOURCE_PATH')}
+        p=files.get(route)
+        if not p:self.send_error(404);return
+        body=p.read_bytes();self.send_response(200)
+        self.send_header('Content-Type','text/html; charset=utf-8' if p.suffix=='.html' else 'text/css' if p.suffix=='.css' else 'text/javascript; charset=utf-8')
+        self.send_header('Content-Length',str(len(body)));self.end_headers();self.wfile.write(body)
+    def log_message(self,*args):pass
+ThreadingHTTPServer(('127.0.0.1',6190),Handler).serve_forever()
