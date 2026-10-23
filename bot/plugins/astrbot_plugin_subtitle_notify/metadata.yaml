@@ -1,0 +1,6 @@
+name: subtitle_notify
+display_name: 字幕申请提醒
+desc: 组长绑定的新字幕申请提醒；固定接口，不调用模型。
+version: v1.4.0
+author: Subtitle Workspace
+repo: https://github.com/l15109514775-ai/subtitle-collaboration-platform
