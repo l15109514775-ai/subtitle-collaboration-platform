@@ -1,0 +1,81 @@
+import fs from 'node:fs/promises';
+process.on('uncaughtException',e=>{console.error('FAIL',e.message,e.code||'',e.query||'');process.exit(1);});
+import assert from 'node:assert/strict';
+import {bootstrap} from 'file:///HISTORICAL_SOURCE_PATH';
+const root=new URL('file:///HISTORICAL_SOURCE_PATH'),db=await bootstrap(),results=[];
+const semi=new URL('file:///HISTORICAL_SOURCE_PATH');
+try{
+ for(const file of [
+  'HISTORICAL_SOURCE_PATH',
+  'HISTORICAL_SOURCE_PATH',
+  'HISTORICAL_SOURCE_PATH',
+  'HISTORICAL_SOURCE_PATH'
+ ])await db.exec(await fs.readFile(file,'utf8'));
+ // Execute the exact release transaction against the saved public function
+ // definitions and the same private-storage preconditions as the live service.
+ const before=JSON.parse(await fs.readFile(new URL('deployment/database-before-exact.json',semi),'utf8'));
+ for(const f of before.functions)await db.exec(f.definition);
+ await db.exec('ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY');
+ await db.exec(await fs.readFile(new URL('deployment/039-release.sql',semi),'utf8'));
+
+ await db.exec(await fs.readFile('HISTORICAL_SOURCE_PATH','utf8'));
+ await db.exec(await fs.readFile(new URL('041_qq_submission_notifications.sql',root),'utf8'));
+ await db.exec(await fs.readFile(new URL('042_qq_approval_instructions.sql',root),'utf8'));
+ const row=async(sql,args=[])=> (await db.query(sql,args)).rows[0];
+ const rpc=async(name,args=[])=> (await row(`SELECT public.${name}(${args.map((_,i)=>'$'+(i+1)).join(',')}) AS result`,args)).result;
+ const act=async(subject,role='authenticated')=>{await db.exec('RESET ROLE');await db.query("SELECT set_config('request.jwt.claim.sub',$1,false)",[subject]);await db.exec('SET ROLE '+role);};
+ const test=async(name,fn)=>{await fn();results.push({name,result:'pass'});console.log('PASS '+name);};
+ const owner=(await row("SELECT m.auth_subject FROM public.st_members m JOIN public.st_member_roles r ON r.member_id=m.id WHERE r.role_code='owner' LIMIT 1")).auth_subject;
+ const ownerId=(await row('SELECT id FROM public.st_members WHERE auth_subject=$1',[owner])).id;
+
+ await db.exec(await fs.readFile('HISTORICAL_SOURCE_PATH','utf8'));
+ await db.exec(await fs.readFile('HISTORICAL_SOURCE_PATH','utf8'));
+ await db.exec(await fs.readFile('HISTORICAL_SOURCE_PATH','utf8'));
+ await db.exec(await fs.readFile('HISTORICAL_SOURCE_PATH','utf8'));
+ await db.exec(await fs.readFile('HISTORICAL_SOURCE_PATH','utf8'));
+ await db.exec(await fs.readFile(new URL('../048_priority_features.sql',import.meta.url),'utf8'));
+ const members={};
+ for(const name of ['priority-a','priority-b','priority-review','priority-pending']){
+  members[name]=(await row('INSERT INTO public.st_members(auth_subject,display_name) VALUES($1,$1) RETURNING id',[name])).id;
+  if(name!=='priority-pending')await db.query("INSERT INTO public.st_member_roles(member_id,role_code) VALUES($1,'contributor')",[members[name]]);
+ }
+ await act(owner);const pid=await rpc('st_create_project',['Priority synthetic project','Synthetic test only']);
+ await db.exec('RESET ROLE');
+ for(const [name,role] of [['priority-a','lead'],['priority-b','contributor'],['priority-review','reviewer']])await db.query('INSERT INTO public.st_project_members(project_id,member_id,role) VALUES($1,$2,$3)',[pid,members[name],role]);
+ const make=async(title,state='open',claim=null)=>{await db.exec('RESET ROLE');const id=(await row("INSERT INTO public.st_tasks(project_id,title,kind,created_by,state) VALUES($1,$2,'translate',$3,$4) RETURNING id",[pid,title,ownerId,state])).id;if(claim)await db.query('INSERT INTO public.st_claims(task_id,project_id,member_id) VALUES($1,$2,$3)',[id,pid,members[claim]]);return id;};
+ const delivery=async(t,who)=>{await db.exec('RESET ROLE');return (await row("INSERT INTO public.st_deliveries(task_id,project_id,version_no,source,submitted_by,content_text,content_sha256) VALUES($1,$2,1,'manual',$3,'Synthetic subtitle',$4) RETURNING id",[t,pid,members[who],'a'.repeat(64)])).id;};
+ const mine=await make('My task','claimed','priority-a'),other=await make('Other member task','claimed','priority-b'),review=await make('Review queue','submitted','priority-b'),ownSubmission=await make('Own submission','submitted','priority-review');
+ await delivery(review,'priority-b');await delivery(ownSubmission,'priority-review');
+ await act(owner);const otherProject=await rpc('st_create_project',['Second synthetic project','Synthetic only']);
+ await db.exec('RESET ROLE');await db.query("INSERT INTO public.st_project_members(project_id,member_id,role) VALUES($1,$2,'contributor')",[otherProject,members['priority-b']]);
+ const cross=(await row("INSERT INTO public.st_tasks(project_id,title,kind,created_by,state) VALUES($1,'Cross-project task','timing',$2,'claimed') RETURNING id",[otherProject,ownerId])).id;
+ await db.query('INSERT INTO public.st_claims(task_id,project_id,member_id) VALUES($1,$2,$3)',[cross,otherProject,members['priority-b']]);
+ await test('anonymous cannot read todos, contexts, set deadlines or inspect raw event rows',async()=>{await act('','anon');for(const [name,args] of [['st_my_work',[]],['st_task_work_context',[mine]],['st_task_deadline',[mine,null]]])await assert.rejects(()=>rpc(name,args));await assert.rejects(()=>db.query('SELECT * FROM public.st_cloud_result_events'));});
+ await test('unapproved member has no personal work access',async()=>{await act('priority-pending');await assert.rejects(()=>rpc('st_my_work'));});
+ await test('ordinary member sees own cross-project work without others tasks',async()=>{await act('priority-b');const r=await rpc('st_my_work');assert.deepEqual(new Set(r.items.map(x=>x.id)),new Set([other,review,cross]));assert.equal(r.summary.mine,3);assert.equal(r.summary.review,0);await assert.rejects(()=>rpc('st_my_work',['team']));});
+ await test('project reviewer sees eligible reviews and cannot review own latest submission',async()=>{await act('priority-review');const r=await rpc('st_my_work');assert.equal(r.items.find(t=>t.id===review).needs_review,true);assert.equal(r.items.find(t=>t.id===ownSubmission).needs_review,false);assert.equal(r.summary.review,1);assert(!r.items.some(t=>t.id===mine));});
+ await test('only project lead or owner may set a deadline and repeated set is audited once',async()=>{await act('priority-b');await assert.rejects(()=>rpc('st_task_deadline',[mine,'2026-10-01T00:00:00Z']));await act('priority-a');await rpc('st_task_deadline',[mine,'2026-10-01T00:00:00Z']);await rpc('st_task_deadline',[mine,'2026-10-01T00:00:00Z']);const r=await rpc('st_my_work');assert.equal(r.items.find(t=>t.id===mine).overdue,true);await db.exec('RESET ROLE');assert.equal(Number((await row("SELECT count(*) n FROM public.st_audit_events WHERE entity_id=$1 AND metadata->>'action'='deadline'",[mine])).n),1);});
+ await test('returned changes appear in personal todo',async()=>{const id=await make('Returned draft','submitted','priority-b');const d=await delivery(id,'priority-b');await act('priority-review');await rpc('st_review',[d,'changes_requested','Synthetic correction',0,'']);await act('priority-b');assert.equal((await rpc('st_my_work')).items.find(t=>t.id===id).returned,true);});
+ await test('project removal blocks todo/context and deadline access',async()=>{await db.exec('RESET ROLE');await db.query("INSERT INTO public.st_project_blocks(project_id,member_id,reason,created_by) VALUES($1,$2,'Synthetic block',$3)",[pid,members['priority-b'],ownerId]);await act('priority-b');assert.deepEqual((await rpc('st_my_work')).items.map(t=>t.id),[cross]);await assert.rejects(()=>rpc('st_task_work_context',[other]));await assert.rejects(()=>rpc('st_task_deadline',[other,null]));await db.exec('RESET ROLE');await db.query('DELETE FROM public.st_project_blocks WHERE project_id=$1 AND member_id=$2',[pid,members['priority-b']]);});
+ await test('soft deleted and completed tasks do not appear; completed deadlines rejected',async()=>{const deleted=await make('Deleted task','claimed','priority-b'),completed=await make('Completed task','approved');await db.query('UPDATE public.st_tasks SET deleted_at=now() WHERE id=$1',[deleted]);await act('priority-b');const r=await rpc('st_my_work');assert(!r.items.some(t=>[deleted,completed].includes(t.id)));await assert.rejects(()=>rpc('st_task_work_context',[deleted]));await act(owner);await assert.rejects(()=>rpc('st_task_deadline',[completed,null]));});
+ await test('team totals include unclaimed tasks and are not truncated by page size',async()=>{for(let n=0;n<54;n++)await make('Page '+n);await act(owner);const a=await rpc('st_my_work',['team',0]),b=await rpc('st_my_work',['team',50]);assert.equal(a.items.length,50);assert(a.summary.total>50);assert.equal(a.items.length+b.items.length,a.summary.total);assert.equal(new Set([...a.items,...b.items].map(t=>t.id)).size,a.summary.total);await assert.rejects(()=>rpc('st_my_work',['mine',-1]));await assert.rejects(()=>rpc('st_my_work',['all',0]));});
+ await test('authorized task context includes older task and live claim',async()=>{await act('priority-a');const c=await rpc('st_task_work_context',[mine]);assert.equal(c.task.id,mine);assert.equal(c.claim.member_id,members['priority-a']);});
+
+ await act(owner);const worker=await rpc('st_cloud_worker_create',['Priority synthetic worker']);
+ const key='c'.repeat(64),sender='d'.repeat(64),gateway=await rpc('st_qq_gateway_register',['YOUR_QQ_APP_ID',(await import('node:crypto')).createHash('sha256').update(key).digest('hex')]);
+ await db.exec('RESET ROLE');await db.query('INSERT INTO public.st_qq_links(gateway_id,sender_hash,member_id) VALUES($1,$2,$3)',[gateway,sender,ownerId]);await act(owner);await rpc('st_qq_notification_configure',[gateway,true]);
+ const feed=async(ids=null)=>{await act('','anon');return rpc('st_qq_result_feed',[key,sender,null,null,ids]);};
+ await test('result feed defaults disabled and ordinary clients cannot enable',async()=>{await assert.rejects(()=>feed());await act('priority-b');await assert.rejects(()=>db.query('UPDATE public.st_qq_notification_settings SET result_enabled=true'));});
+ await db.exec('RESET ROLE');await db.query('UPDATE public.st_qq_notification_settings SET result_enabled=true,result_activated_at=clock_timestamp() WHERE gateway_id=$1',[gateway]);
+ const jt=await make('Synthetic cloud result');
+ await db.exec('RESET ROLE');const job=(await row("INSERT INTO public.st_cloud_jobs(project_id,task_id,requested_by,worker_id,file_name,byte_size,mime_type,sha256,sources,source_expires_at,max_video_seconds,max_text_requests,max_secondary_requests) VALUES($1,$2,$3,$4,'fixture.mp4',68,'video/mp4',$5,'[]',now()+interval '1 hour',1200,400,40) RETURNING id",[pid,jt,ownerId,worker.id,'f'.repeat(64)])).id;
+ await test('queued state creates no result event; transitions are recorded once',async()=>{assert.equal((await feed()).events.length,0);await db.exec('RESET ROLE');await db.query("UPDATE public.st_cloud_jobs SET state='failed' WHERE id=$1",[job]);await db.query("UPDATE public.st_cloud_jobs SET state='failed',stage='sensitive raw diagnostic' WHERE id=$1",[job]);const r=await feed();assert.equal(r.events.length,1);assert.equal(r.events[0].state,'failed');assert.deepEqual(Object.keys(r.events[0]).sort(),['created_at','id','job_id','state']);assert(!JSON.stringify(r).includes('sensitive'));});
+ await test('wrong key and wrong sender cannot read result statuses',async()=>{await act('','anon');await assert.rejects(()=>rpc('st_qq_result_feed',['e'.repeat(64),sender]));await assert.rejects(()=>rpc('st_qq_result_feed',[key,'e'.repeat(64)]));});
+ const first=(await feed()).events[0];
+ await test('newer result supersedes old event and cursor pagination is stable',async()=>{await db.exec('RESET ROLE');await db.query("UPDATE public.st_cloud_jobs SET state='waiting_reconciliation' WHERE id=$1",[job]);const r=await feed();assert.equal(r.events.length,1);assert.equal(r.events[0].state,'waiting_reconciliation');assert.equal((await feed([first.id])).events.length,0);const end=r.events[0];await act('','anon');assert.equal((await rpc('st_qq_result_feed',[key,sender,end.created_at,end.id])).events.length,0);await assert.rejects(()=>rpc('st_qq_result_feed',[key,sender,end.created_at,null]));await assert.rejects(()=>rpc('st_qq_result_feed',[key,sender,null,null,Array(11).fill(end.id)]));});
+ await test('completed result is observable; stale errors no longer eligible',async()=>{await db.exec('RESET ROLE');await db.query("UPDATE public.st_cloud_jobs SET state='succeeded' WHERE id=$1",[job]);assert.equal((await feed()).events[0].state,'succeeded');});
+ await test('hidden project excludes result feed; original status history stays internal',async()=>{await db.exec('RESET ROLE');await db.query('UPDATE public.st_projects SET deleted_at=now() WHERE id=$1',[pid]);assert.equal((await feed()).events.length,0);await db.exec('RESET ROLE');assert.equal(Number((await row('SELECT count(*) n FROM public.st_cloud_result_events WHERE job_id=$1',[job])).n),3);await db.query('UPDATE public.st_projects SET deleted_at=NULL WHERE id=$1',[pid]);});
+ await test('future activation does not replay prior result events',async()=>{await db.exec('RESET ROLE');await db.query("UPDATE public.st_qq_notification_settings SET result_activated_at=clock_timestamp()+interval '1 second' WHERE gateway_id=$1",[gateway]);assert.equal((await feed()).events.length,0);});
+ await test('revoked QQ link immediately removes access',async()=>{await db.exec('RESET ROLE');await db.query('DELETE FROM public.st_qq_links WHERE gateway_id=$1 AND member_id=$2',[gateway,ownerId]);await assert.rejects(()=>feed());});
+ await fs.writeFile(new URL('../database-results.json',import.meta.url),JSON.stringify({engine:'PGlite',live:false,results},null,2));
+}finally{await db.close();}

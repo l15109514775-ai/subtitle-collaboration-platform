@@ -1,0 +1,74 @@
+import asyncio
+import importlib
+import sys
+import unittest
+from pathlib import Path
+from unittest.mock import AsyncMock
+
+root=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(root))
+sys.path.insert(0,'HISTORICAL_SOURCE_PATH')
+import test_notify as fixture
+m=importlib.import_module('plugin.main')
+logic=importlib.import_module('plugin.outbox')
+result_logic=importlib.import_module('plugin.results')
+fixture.m=m;fixture.logic=logic
+sys.modules['astrbot_plugin_subtitle_notify.main']=m
+sys.modules['astrbot_plugin_subtitle_notify.outbox']=logic
+EVENT={'id':fixture.E['id'],'job_id':fixture.E['request_id'],'state':'succeeded','created_at':fixture.E['created_at']}
+FEED={'enabled':True,'events':[EVENT]}
+
+class ResultTests(fixture.Tests):
+    async def setup_results(self):
+        await self.dual()
+        state=m.read_state(self.bot.state_path);state['result_enabled']=True;m.save_state(self.bot.state_path,state)
+        self.bot.feed=AsyncMock(return_value=FEED);self.bot.send.reset_mock()
+    async def test_private_result_once_across_restart(self):
+        await self.setup_results();await self.bot.result_tick();await self.bot.result_tick()
+        self.assertEqual(self.bot.send.await_count,1)
+        args=self.bot.send.await_args.args
+        self.assertEqual(args[1],{'mode':'private','openid':'OWNER'})
+        self.assertIn('云端字幕已回传',args[2]);self.assertIn(EVENT['job_id'],args[2])
+        self.assertNotIn('--execute',args[2]);self.assertNotIn('<qqbot-at-user',args[2])
+    async def test_unknown_send_is_never_automatically_retried(self):
+        await self.setup_results();self.bot.send.side_effect=TimeoutError()
+        with self.assertRaises(TimeoutError):await self.bot.result_tick()
+        await self.bot.result_tick();self.assertEqual(self.bot.send.await_count,1)
+    async def test_changed_event_is_skipped_without_send(self):
+        await self.setup_results();self.bot.feed.side_effect=[FEED,FEED,{'enabled':True,'events':[]}]
+        self.assertTrue(await self.bot.result_tick());self.bot.send.assert_not_called()
+        box=logic.Outbox(self.root/'subtitle_result_notifications.sqlite3')
+        self.assertEqual(box.status(),{'resolved_without_retry':1});box.close()
+    async def test_owner_recipient_hash_is_required(self):
+        await self.setup_results();state=m.read_state(self.bot.state_path);state['private_target']['openid']='OTHER';m.save_state(self.bot.state_path,state)
+        with self.assertRaises(ValueError):await self.bot.result_tick()
+        self.bot.feed.assert_not_called();self.bot.send.assert_not_called()
+    async def test_missing_ledger_is_not_reset(self):
+        await self.setup_results();await self.bot.result_tick();(self.root/'subtitle_result_notifications.sqlite3').unlink()
+        with self.assertRaises(ValueError):await self.bot.result_tick()
+        self.assertEqual(self.bot.send.await_count,1)
+    async def test_revoked_access_before_ledger_creation(self):
+        await self.setup_results();self.bot.feed.side_effect=ValueError('denied')
+        with self.assertRaises(ValueError):await self.bot.result_tick()
+        self.assertFalse((self.root/'subtitle_result_notifications.sqlite3').exists());self.bot.send.assert_not_called()
+    async def test_concurrent_ticks_do_not_duplicate(self):
+        await self.setup_results();await asyncio.gather(self.bot.result_tick(),self.bot.result_tick())
+        self.assertEqual(self.bot.send.await_count,1)
+    async def test_all_fixed_result_states_have_sanitized_text(self):
+        for state in result_logic.STATES:
+            text=result_logic.result_text(EVENT['job_id'],state)
+            self.assertIn(EVENT['job_id'],text)
+            for bad in ('token=','sources','gateway_key','--execute'):self.assertNotIn(bad,text)
+        for bad in ({**EVENT,'source_url':'https://private'}, {**EVENT,'state':'running'}):
+            with self.assertRaises(ValueError):result_logic.result_events({'enabled':True,'events':[bad]})
+    async def test_result_status_command_shows_durable_receipts(self):
+        await self.setup_results();await self.bot.result_tick();self.bot.feed.return_value=fixture.FEED
+        reply=await self.invoke(fixture.Event('字幕通知状态'))
+        self.assertIn('云端结果私聊已确认 1',reply[0])
+
+suite=unittest.TestSuite()
+for name in ['test_notify','test_approval','test_schedule']:
+    suite.addTests(unittest.defaultTestLoader.loadTestsFromModule(importlib.import_module(name)))
+suite.addTests(unittest.defaultTestLoader.loadTestsFromTestCase(ResultTests))
+result=unittest.TextTestRunner(verbosity=1).run(suite)
+raise SystemExit(0 if result.wasSuccessful() else 1)
