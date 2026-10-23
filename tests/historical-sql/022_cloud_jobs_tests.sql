@@ -1,0 +1,45 @@
+BEGIN;
+DO $$
+DECLARE own text;w jsonb;w2 jsonb;j jsonb;j2 jsonb;claim jsonb;result jsonb;bad boolean;f jsonb:='[]'::jsonb;b bytea;n text;before_points bigint;before_contributions bigint;raw text;
+BEGIN
+ SELECT m.auth_subject INTO own FROM public.st_members m JOIN public.st_member_roles r ON r.member_id=m.id WHERE r.role_code='owner' LIMIT 1;
+ SELECT count(*) INTO before_points FROM public.st_point_entries;SELECT count(*) INTO before_contributions FROM public.st_contributions;
+ PERFORM set_config('request.jwt.claim.sub',own,true);EXECUTE 'SET LOCAL ROLE authenticated';
+ w:=public.st_cloud_worker_create('cloud-test');w2:=public.st_cloud_worker_create('cloud-test-other');
+ j:=public.st_cloud_prepare((w->>'id')::uuid,'自动交付事务测试','00:00–01:00','source.mp4','video/mp4',1000,repeat('a',64),60,20,2);
+ j2:=public.st_cloud_prepare((w2->>'id')::uuid,'隔离测试','00:00–01:00','source.mp4','video/mp4',1000,repeat('a',64),60,20,2);
+ bad:=false;BEGIN PERFORM public.st_cloud_source_ready((j->>'job_id')::uuid,'[]'::jsonb);EXCEPTION WHEN raise_exception THEN bad:=true;END;IF NOT bad THEN RAISE EXCEPTION 'Missing source accepted';END IF;
+ EXECUTE 'RESET ROLE';
+ UPDATE public.st_cloud_jobs SET state='queued',source_expires_at=now()+interval '1 hour',sources=jsonb_build_array(jsonb_build_object('path',id::text||'/part-0000','byte_size',1000,'url','https://example-env.api.tcloudbasegateway.com/fixture-only')) WHERE id IN ((j->>'job_id')::uuid,(j2->>'job_id')::uuid);
+ EXECUTE 'SET LOCAL ROLE anon';PERFORM set_config('request.jwt.claim.sub','',true);
+ bad:=false;BEGIN PERFORM public.st_cloud_worker_call(repeat('0',64),'claim');EXCEPTION WHEN raise_exception THEN bad:=true;END;IF NOT bad THEN RAISE EXCEPTION 'Invalid worker admitted';END IF;
+ result:=public.st_cloud_worker_call(w->>'key','claim',(j2->>'job_id')::uuid);IF result->>'state'<>'no_job' THEN RAISE EXCEPTION 'Worker crossed job assignment';END IF;
+ claim:=public.st_cloud_worker_call(w->>'key','claim',(j->>'job_id')::uuid);IF claim->>'state'<>'running' THEN RAISE EXCEPTION 'Claim failed';END IF;
+ result:=public.st_cloud_worker_call(w->>'key','claim',(j->>'job_id')::uuid);IF result->>'state'<>'no_job' THEN RAISE EXCEPTION 'Double claim';END IF;
+ bad:=false;BEGIN PERFORM public.st_cloud_worker_call(w->>'key','heartbeat',(j->>'job_id')::uuid,jsonb_build_object('lease_id',gen_random_uuid()));EXCEPTION WHEN raise_exception THEN bad:=true;END;IF NOT bad THEN RAISE EXCEPTION 'Wrong lease admitted';END IF;
+ PERFORM public.st_cloud_worker_call(w->>'key','heartbeat',(j->>'job_id')::uuid,jsonb_build_object('lease_id',claim->>'lease_id','stage','offline fixture'));
+ FOREACH n IN ARRAY ARRAY['Chinese.ass','Bilingual.ass','Chinese.srt','Bilingual.srt','cues.json','quality.json','recognition-provenance.json','manifest.json','usage.json'] LOOP
+  raw:=CASE WHEN n LIKE '%.ass' THEN E'[Script Info]\nScriptType: v4.00+\n[Events]\n; Explicit offline fixture, not recognition.' WHEN n LIKE '%.srt' THEN E'1\n00:00:00,000 --> 00:00:01,000\n离线测试夹具' ELSE '{"offline_fixture":true}' END;
+  b:=convert_to(raw,'UTF8');f:=f||jsonb_build_array(jsonb_build_object('name',n,'base64',encode(b,'base64'),'bytes',octet_length(b),'sha256',encode(sha256(b),'hex')));
+ END LOOP;
+ bad:=false;BEGIN PERFORM public.st_cloud_worker_call(w->>'key','publish',(j->>'job_id')::uuid,jsonb_build_object('lease_id',claim->>'lease_id','files',f-8));EXCEPTION WHEN raise_exception THEN bad:=true;END;IF NOT bad THEN RAISE EXCEPTION 'Missing usage report admitted';END IF;
+ bad:=false;BEGIN PERFORM public.st_cloud_worker_call(w->>'key','publish',(j->>'job_id')::uuid,jsonb_build_object('lease_id',claim->>'lease_id','files',jsonb_set(f,'{0,sha256}',to_jsonb(repeat('0',64)))));EXCEPTION WHEN raise_exception THEN bad:=true;END;IF NOT bad THEN RAISE EXCEPTION 'Corrupt file admitted';END IF;
+ bad:=false;BEGIN PERFORM public.st_cloud_worker_call(w->>'key','publish',(j->>'job_id')::uuid,jsonb_build_object('lease_id',claim->>'lease_id','files',f||jsonb_build_array(f->0)));EXCEPTION WHEN raise_exception THEN bad:=true;END;IF NOT bad THEN RAISE EXCEPTION 'Duplicate file admitted';END IF;
+ result:=public.st_cloud_worker_call(w->>'key','publish',(j->>'job_id')::uuid,jsonb_build_object('lease_id',claim->>'lease_id','files',f));
+ IF result->>'state'<>'succeeded' THEN RAISE EXCEPTION 'Publish failed';END IF;
+ IF public.st_cloud_worker_call(w->>'key','publish',(j->>'job_id')::uuid,jsonb_build_object('lease_id',claim->>'lease_id','files',f))->>'delivery_id' IS DISTINCT FROM result->>'delivery_id' THEN RAISE EXCEPTION 'Publish not idempotent';END IF;
+ bad:=false;BEGIN PERFORM public.st_cloud_files((j->>'job_id')::uuid);EXCEPTION WHEN insufficient_privilege THEN bad:=true;END;IF NOT bad THEN RAISE EXCEPTION 'Anonymous reads private files';END IF;
+ EXECUTE 'RESET ROLE';
+ IF (SELECT count(*) FROM public.st_deliveries WHERE task_id=(j->>'task_id')::uuid)<>1 OR (SELECT state FROM public.st_tasks WHERE id=(j->>'task_id')::uuid)<>'open' THEN RAISE EXCEPTION 'Delivery version or human claim state incorrect';END IF;
+ IF EXISTS(SELECT 1 FROM public.st_projects WHERE id=(j->>'project_id')::uuid AND lead_member_id IS NOT NULL) THEN RAISE EXCEPTION 'Worker took project leadership';END IF;
+ IF (SELECT count(*) FROM public.st_point_entries)<>before_points OR (SELECT count(*) FROM public.st_contributions)<>before_contributions THEN RAISE EXCEPTION 'AI awarded human credit';END IF;
+ PERFORM set_config('request.jwt.claim.sub',own,true);EXECUTE 'SET LOCAL ROLE authenticated';
+ IF jsonb_array_length(public.st_cloud_files((j->>'job_id')::uuid))<>9 THEN RAISE EXCEPTION 'Owner cannot read complete files';END IF;
+ PERFORM public.st_cloud_cancel((j2->>'job_id')::uuid);
+ result:=public.st_cloud_worker_call(w2->>'key','claim',(j2->>'job_id')::uuid);IF result->>'state'<>'no_job' THEN RAISE EXCEPTION 'Cancelled job claimed';END IF;
+ PERFORM public.st_cloud_worker_revoke((w->>'id')::uuid);
+ bad:=false;BEGIN PERFORM public.st_cloud_worker_call(w->>'key','claim');EXCEPTION WHEN raise_exception THEN bad:=true;END;IF NOT bad THEN RAISE EXCEPTION 'Revoked worker admitted';END IF;
+ EXECUTE 'RESET ROLE';
+ IF EXISTS(SELECT 1 FROM public.st_audit_events WHERE entity_table IN ('st_cloud_jobs','st_cloud_workers') AND (metadata::text LIKE '%'||(w->>'key')||'%' OR metadata::text LIKE '%base64%' OR metadata::text LIKE '%fixture-only%')) THEN RAISE EXCEPTION 'Private data leaked to audit';END IF;
+END; $$;
+ROLLBACK;
