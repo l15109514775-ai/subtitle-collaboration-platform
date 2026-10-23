@@ -1,0 +1,14 @@
+.cloud-clips { margin-block: 1.5rem; }
+.cloud-clips__form { display: grid; gap: .75rem; padding: 1rem; border: 1px solid #b8c3cc; border-radius: .75rem; }
+.cloud-clips__form[hidden] { display: none; }
+.cloud-clips__form input { min-width: 0; padding: .65rem; font: inherit; }
+.cloud-clips__form p { margin: 0; }
+.cloud-clips__cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: 1rem; }
+.cloud-clips__card { border: 1px solid #b8c3cc; border-radius: .75rem; padding: 1rem; overflow-wrap: anywhere; }
+.cloud-clips__card h3 { margin-top: 0; }
+.cloud-clips button { font: inherit; padding: .6rem .9rem; cursor: pointer; margin: .25rem; }
+.cloud-clips button:disabled { cursor: wait; opacity: .6; }
+.cloud-clips :focus-visible { outline: 3px solid #356fc2; outline-offset: 3px; }
+.cloud-clips__viewer { width: min(70rem, 94vw); max-height: 94vh; overflow: auto; }
+.cloud-clips__viewer video, .cloud-clips__viewer img { width: 100%; max-height: 70vh; object-fit: contain; }
+
