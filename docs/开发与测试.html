@@ -11,8 +11,9 @@ python tools/check_release.py</code></pre>
 <p>机器人测试不需要接通 QQ，也不会发消息：</p>
 <pre><code>python -m unittest discover -s tests/bridge -p &quot;test_*.py&quot;
 python -m unittest discover -s tests/notifications -p &quot;test_*.py&quot;</code></pre>
-<p>工作器的离线测试：</p>
-<pre><code>cd worker
+<p>工作器的离线测试需要 NumPy、FFmpeg 与中文字体；不必下载模型权重。先在仓库根目录安装小型测试依赖，再进入工作器目录：</p>
+<pre><code>python -m pip install -r requirements-test.txt
+cd worker
 python run_offline_tests.py</code></pre>
 <p>在 Windows 上改用 <code>python run_offline_tests.py --windows-adapter</code>。其输出会明确记录跳过项和持久性验证限制。没有中文字体时，字体相关测试可能跳过；Linux 完整验收应安装中文字体后再跑。</p>
 <p>测试模拟网络和费用请求，使用虚构凭据，不应拿真实模型 Key 运行测试。不要将 <code>.env</code>、截图、模型文件或实际稿件提交进仓库。</p>
