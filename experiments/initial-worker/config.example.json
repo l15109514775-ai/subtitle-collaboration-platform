@@ -1,0 +1,14 @@
+{
+  "billable_execution_approved": false,
+  "max_text_requests": 0,
+  "max_video_bytes": 1073741824,
+  "max_video_seconds": 7200,
+  "max_cues": 3000,
+  "max_output_tokens": 1800,
+  "gpt_base_url": "https://text-provider.example.invalid/v1",
+  "gpt_model": "gpt-6-luna",
+  "whisper_model_path": "/models/large-v3-turbo",
+  "device": "cpu",
+  "compute_type": "int8"
+}
+
