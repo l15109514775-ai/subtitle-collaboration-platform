@@ -468,16 +468,16 @@
     {
       "path": "docs/版本更新.html",
       "component": "docs",
-      "bytes": 3751,
-      "sha256": "3973920673c946356151621130edfa7129d616fc74a7bbdc894d9d095e11820e",
-      "git_blob_sha": "d1a44b61d9218ae6776b5dfd96b5b876953510c2"
+      "bytes": 4347,
+      "sha256": "c5b3da7cf9d18ee3206553b1d1be0f7300c2e0ce24656d6bd72b3c6019476cfc",
+      "git_blob_sha": "825a82cac82e96b89c93a87bb63403b2c62e2371"
     },
     {
       "path": "docs/版本更新.md",
       "component": "docs",
-      "bytes": 2934,
-      "sha256": "685f852a8595dfeb6d5ce529c434199e64c8d0bbd063ded7a219b1beb2f7f373",
-      "git_blob_sha": "67464880cfbc3b6b5aab19a5dcd4f9f2726e941e"
+      "bytes": 3519,
+      "sha256": "b70418da8a448421e5aa81e349548a1a7a67ae7133afbd8319d73a0a29113a74",
+      "git_blob_sha": "ca7d9c243dab87b60d7bb2365b7bdf2de63d3ee9"
     },
     {
       "path": "docs/维护与排错.html",
@@ -895,9 +895,9 @@
     {
       "path": "site/index.html",
       "component": "site",
-      "bytes": 29416,
-      "sha256": "9f7b52e97280244e35765e3d290197176df4ca5354f5fd45323905d3499da276",
-      "git_blob_sha": "48ea442891a301b357a2640b4b9a5b12ed61a19d"
+      "bytes": 29550,
+      "sha256": "3e3bcea99a91611ca575a341c1c7e4d2a549c80ec847e928694b701d79c2b454",
+      "git_blob_sha": "2e0c9197cf44c45c3979daab5413bf7ba8de96e3"
     },
     {
       "path": "site/media-app.js",
@@ -916,9 +916,9 @@
     {
       "path": "site/membership.js",
       "component": "site",
-      "bytes": 8788,
-      "sha256": "98e61d6faa0f20719276caff32edf6a827f7df550cca79856b04910fa9d14254",
-      "git_blob_sha": "6b14dae081f78df28149af47bf1eff06eb4013dd"
+      "bytes": 10587,
+      "sha256": "487ba7426388547559f05e426388f1c8d68196b6ca781acc0b0527469c68141c",
+      "git_blob_sha": "fdc5ef4b8f866f1ba80862de114e304aa3c82029"
     },
     {
       "path": "site/password-reset-20261023-1.js",
@@ -1266,9 +1266,9 @@
     {
       "path": "tests/registration.cjs",
       "component": "tests",
-      "bytes": 2409,
-      "sha256": "5223192f94e67d9eedd11d3f5fe5d22b1abad3fc4ab19f60c4fcc8bdefc4f56e",
-      "git_blob_sha": "6b277dbe13346ca656bc5c296cec84f362c6027d"
+      "bytes": 4510,
+      "sha256": "8c7ae3f5069c3f549ad7644f853961138ff86f3a1c5c63047038097c63b83006",
+      "git_blob_sha": "84b440db6cdec162a16609295c688070782347a3"
     },
     {
       "path": "tests/test_configure.py",
