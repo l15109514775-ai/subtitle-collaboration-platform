@@ -1,4 +1,4 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>从零搭建 · 字幕协作台</title><link rel="stylesheet" href="handbook.css"></head><body><main><nav><a href="从零搭建.html">从零搭建</a> · <a href="使用手册.html">日常使用</a> · <a href="维护与排错.html">维护排错</a> · <a href="验证状态.html">验证状态</a></nav><h1>从零搭建：给没有编程经验的字幕组管理员</h1>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>从零搭建 · 灯塔字幕札记</title><link rel="stylesheet" href="handbook.css"></head><body><main><nav><a href="从零搭建.html">从零搭建</a> · <a href="使用手册.html">日常使用</a> · <a href="维护与排错.html">维护排错</a> · <a href="验证状态.html">验证状态</a></nav><h1>从零搭建：给没有编程经验的字幕组管理员</h1>
 <p>你不需要先学编程，但第一次搭建需要耐心完成几个平台的设置。建议用电脑完成首次配置，之后可以用安卓手机处理申请和启动云任务。先搭一个只有你自己使用的测试环境，成功后再邀请组员。</p>
 <p>遇到本文没有出现的收费确认、账号验证或权限提示，先停在该页面，核对它是否属于你打算开通的服务。任何人协助你时，都不需要你把密码、验证码或密钥发进聊天。</p>
 <h2>0. 先认识五样东西</h2>
@@ -22,7 +22,7 @@
 <li>2. 新建环境，选择你需要的地域和 <strong>PostgreSQL / PG 模式</strong>。如果创建成传统文档数据库模式，本项目的 SQL 无法直接使用。</li>
 <li>3. 给环境起名，例如 <code>subtitle-community-test</code>。复制页面显示的<strong>完整环境 ID</strong>，不是自己填写的简短名称。</li>
 <li>4. 查看套餐计费说明、资源点和数据库计算费用，只有你接受费用后才开通。</li>
-<li>5. 在“静态网站托管”找到默认 HTTPS 网址。记录它，暂时不绑定自定义域名。</li>
+<li>5. 在“静态网站托管”找到默认 HTTPS 网址。记录它，仅用于开发测试。准备正式域名时，按 <a href="域名与证书.html">域名与证书</a> 完成备案、DNS 验证和 HTTPS 验收。</li>
 </ul>
 <p><strong>成功标志：</strong> 控制台里能打开 PostgreSQL 数据库和 SQL 编辑器，环境状态正常，套餐资源没有耗尽。</p>
 <p>不要以为访问量少就一定免费：数据库计算也可能持续消耗额度。具体请阅读 <a href="维护与排错.html">维护与排错</a>。</p>
@@ -110,4 +110,4 @@
 <h2>10. 最后再开放给组员</h2>
 <p>先完成 <a href="验证状态.html">验证状态</a> 中的线上验收清单。确认备份、费用提醒、两个普通账号的权限边界、私有下载和异常恢复，再邀请少量组员。</p>
 <p>原视频 7 天清理与硬删除代码已包含，但新部署默认不启用自动清理。你明确接受保留期后，按 <a href="维护与排错.html">维护与排错</a> 启用；硬删除仅授予指定的一名组长。</p>
-<p>建议第一次完整验收后保存自己的环境 ID、网址、仓库版本和操作记录到私人文档中。记录“密钥保存在哪里”，不要记录密钥明文。以后升级先在测试环境验证，保留可以回退的版本。</p><hr><p>开源字幕协作台 · AGPL-3.0-only · 文档源文件与本页放在同一目录。</p></main></body></html>
+<p>建议第一次完整验收后保存自己的环境 ID、网址、仓库版本和操作记录到私人文档中。记录“密钥保存在哪里”，不要记录密钥明文。以后升级先在测试环境验证，保留可以回退的版本。</p><hr><p>灯塔字幕札记开源版 · AGPL-3.0-only · 文档源文件与本页放在同一目录。</p></main></body></html>

@@ -1,4 +1,4 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>维护与排错 · 字幕协作台</title><link rel="stylesheet" href="handbook.css"></head><body><main><nav><a href="从零搭建.html">从零搭建</a> · <a href="使用手册.html">日常使用</a> · <a href="维护与排错.html">维护排错</a> · <a href="验证状态.html">验证状态</a></nav><h1>维护、费用和故障排查</h1>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>维护与排错 · 灯塔字幕札记</title><link rel="stylesheet" href="handbook.css"></head><body><main><nav><a href="从零搭建.html">从零搭建</a> · <a href="使用手册.html">日常使用</a> · <a href="维护与排错.html">维护排错</a> · <a href="验证状态.html">验证状态</a></nav><h1>维护、费用和故障排查</h1>
 <h2>日常维护</h2>
 <p>每天查看申请积压、失败/待核对任务、QQ 待核对回执和资源用量。每次准备升级前，记录当前源码版本、数据库迁移版本，备份数据库与文件，并在隔离环境验证。</p>
 <p>新代码发布不要覆盖运行数据。网站更新先传新版本脚本与样式，最后传引用它们的 <code>index.html</code>。数据库升级逐项审查；<code>INSTALL_ALL.sql</code> 只用于首次空环境安装，不能当升级脚本重复跑。</p>
@@ -68,4 +68,4 @@ VALUES(1,&#x27;组长成员UUID&#x27;,&#x27;本组QQ网关UUID&#x27;,true);</cod
 <p>反馈时提供版本、操作步骤、期望结果和已脱敏的错误编号。网站的“复制反馈摘要”有意不包含完整请求体、令牌和稿件，优先使用它。</p>
 <h2>更新机器人插件</h2>
 <p>停止容器并备份 <code>data/</code>。把生成的两个插件源目录替换到 <code>data/plugins/</code> 对应位置，再启动并查看插件版本。<strong>不要运行首次配置工具覆盖 <code>subtitle_bridge.json</code>、<code>subtitle_notifications.json</code> 或任何 SQLite 账本。</strong> 插件版本升级与数据库迁移需要一起检查兼容性。</p>
-<p><code>ops/dashboard-*</code> 和对应 systemd 文件是原部署网络诊断工具，只有普通 SSH 面板访问出现同类问题时才研究。默认部署不需要它们，也没有打包 AstrBot 的第三方管理界面二进制。</p><hr><p>开源字幕协作台 · AGPL-3.0-only · 文档源文件与本页放在同一目录。</p></main></body></html>
+<p><code>ops/dashboard-*</code> 和对应 systemd 文件是原部署网络诊断工具，只有普通 SSH 面板访问出现同类问题时才研究。默认部署不需要它们，也没有打包 AstrBot 的第三方管理界面二进制。</p><hr><p>灯塔字幕札记开源版 · AGPL-3.0-only · 文档源文件与本页放在同一目录。</p></main></body></html>

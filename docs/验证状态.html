@@ -1,4 +1,14 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>验证状态 · 字幕协作台</title><link rel="stylesheet" href="handbook.css"></head><body><main><nav><a href="从零搭建.html">从零搭建</a> · <a href="使用手册.html">日常使用</a> · <a href="维护与排错.html">维护排错</a> · <a href="验证状态.html">验证状态</a></nav><h1>首个社区版验证状态</h1>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>验证状态 · 灯塔字幕札记</title><link rel="stylesheet" href="handbook.css"></head><body><main><nav><a href="从零搭建.html">从零搭建</a> · <a href="使用手册.html">日常使用</a> · <a href="维护与排错.html">维护排错</a> · <a href="验证状态.html">验证状态</a></nav><h1>社区版验证状态</h1>
+<h2>v0.2.0-beta.1 本地增量验证（2026-10-27）</h2>
+<ul>
+<li>空库安装、生成的单事务安装包、身份权限隔离测试全部通过。</li>
+<li>42 项既有网页回归通过；新增 12 个注册流程用例通过，未发送真实邮件或创建账号。</li>
+<li>配置与部署保护 7 项、QQ 绑定插件 9 项、QQ 通知插件 64 项通过，网络均为模拟。</li>
+<li>发布内容规则扫描通过。GitHub Actions 的完整离线检查结果以该版本提交对应的运行记录为准，不把旧版本的工作器测试结果当作本次重新执行结果。</li>
+<li>维护者部署环境的自定义域名、受信任 TLS 证书链、首页、主要静态文件及登录跨域预检通过；未据此宣称所有用户环境已完成端到端部署。</li>
+</ul>
+<p>本次更新只更改网站文案、注册前端校验、教程与版本信息；不包含数据库迁移，不更换机器人或模型凭据。升级步骤见 <a href="版本更新.html">版本更新</a>。</p>
+<h2>v0.1.x 首个社区版历史基线</h2>
 <p>整理日期：2026-10-23。以下是本次整理后运行的检查，不把旧部署记录当作新的验收结果。</p>
 <table>
 <tr><th>检查</th><th>结果</th><th>范围</th></tr>
@@ -26,4 +36,4 @@
 <li>独立环境完成数据库与文件的恢复演练，并核对积分、版本与通知账本一致。</li>
 <li>安卓实际机型的上传、配置入口和下载可用性。</li>
 </ul>
-<p>PGlite 单进程测试不证明真实多连接并发；模拟 HTTP 不证明 QQ 平台批准主动发言；桌面浏览器不证明全部安卓设备可用。通过与未验证项目应继续在社区迭代中记录。</p><hr><p>开源字幕协作台 · AGPL-3.0-only · 文档源文件与本页放在同一目录。</p></main></body></html>
+<p>PGlite 单进程测试不证明真实多连接并发；模拟 HTTP 不证明 QQ 平台批准主动发言；桌面浏览器不证明全部安卓设备可用。通过与未验证项目应继续在社区迭代中记录。</p><hr><p>灯塔字幕札记开源版 · AGPL-3.0-only · 文档源文件与本页放在同一目录。</p></main></body></html>

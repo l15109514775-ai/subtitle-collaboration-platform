@@ -1,4 +1,4 @@
-<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>架构与数据 · 字幕协作台</title><link rel="stylesheet" href="handbook.css"></head><body><main><nav><a href="从零搭建.html">从零搭建</a> · <a href="使用手册.html">日常使用</a> · <a href="维护与排错.html">维护排错</a> · <a href="验证状态.html">验证状态</a></nav><h1>系统如何工作</h1>
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>架构与数据 · 灯塔字幕札记</title><link rel="stylesheet" href="handbook.css"></head><body><main><nav><a href="从零搭建.html">从零搭建</a> · <a href="使用手册.html">日常使用</a> · <a href="维护与排错.html">维护排错</a> · <a href="验证状态.html">验证状态</a></nav><h1>系统如何工作</h1>
 <h2>三个运行位置</h2>
 <table>
 <tr><th>位置</th><th>运行内容</th><th>不应持有的权限</th></tr>
@@ -45,4 +45,4 @@
 <p>人工审核、贡献和积分由数据库事务管理。积分更正保留修正记录，不悄悄重写历史。AI 交付仍需要人工检查，不自动算作人工劳动。</p>
 <h2>QQ 为什么不是一直查数据库</h2>
 <p><code>schedule.py</code> 每 15 秒只看服务器本地时钟；到了每天四个时段才通过固定接口查询云数据库。每个时段在本地 SQLite 中登记一次，防止重启或重复进程造成同一时段反复轮询。消息结果不确定时暂停相应通道，保留回执供人工核查。</p>
-<p>定时检查减少调用量，但不会保证 PostgreSQL 本身零计算费用。数据库费用、模型请求费和机器人服务器费用要分别看。</p><hr><p>开源字幕协作台 · AGPL-3.0-only · 文档源文件与本页放在同一目录。</p></main></body></html>
+<p>定时检查减少调用量，但不会保证 PostgreSQL 本身零计算费用。数据库费用、模型请求费和机器人服务器费用要分别看。</p><hr><p>灯塔字幕札记开源版 · AGPL-3.0-only · 文档源文件与本页放在同一目录。</p></main></body></html>

@@ -45,6 +45,6 @@ def render(s):
  if ul:out.append('</ul>')
  return '\n'.join(out)
 for p in (R/'docs').glob('*.md'):
- content='<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+html.escape(p.stem)+' · 字幕协作台</title><link rel="stylesheet" href="handbook.css"></head><body><main><nav><a href="从零搭建.html">从零搭建</a> · <a href="使用手册.html">日常使用</a> · <a href="维护与排错.html">维护排错</a> · <a href="验证状态.html">验证状态</a></nav>'+render(p.read_text(encoding='utf8'))+'<hr><p>开源字幕协作台 · AGPL-3.0-only · 文档源文件与本页放在同一目录。</p></main></body></html>'
+ content='<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+html.escape(p.stem)+' · 灯塔字幕札记</title><link rel="stylesheet" href="handbook.css"></head><body><main><nav><a href="从零搭建.html">从零搭建</a> · <a href="使用手册.html">日常使用</a> · <a href="维护与排错.html">维护排错</a> · <a href="验证状态.html">验证状态</a></nav>'+render(p.read_text(encoding='utf8'))+'<hr><p>灯塔字幕札记开源版 · AGPL-3.0-only · 文档源文件与本页放在同一目录。</p></main></body></html>'
  p.with_suffix('.html').write_text(content,encoding='utf8')
 print('Offline handbook rendered')

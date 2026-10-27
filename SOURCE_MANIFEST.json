@@ -48,9 +48,9 @@
     {
       "path": "README.md",
       "component": "project",
-      "bytes": 5287,
-      "sha256": "44f7aa55f9fa62dee73e250b84bf316c3349605e0958ab072395f4853b2083f3",
-      "git_blob_sha": "41340a72bb3ad6e8a094e17ed4243b6d3dc64640"
+      "bytes": 5516,
+      "sha256": "f60364d276c9f283a2992c0cda0251696fb4735a2d084bb49ae42cb096d9bdd5",
+      "git_blob_sha": "45ff2d562069da8d3d21bceb45dcfb9989a9e96d"
     },
     {
       "path": "SECURITY.md",
@@ -384,51 +384,65 @@
     {
       "path": "docs/从零搭建.html",
       "component": "docs",
-      "bytes": 17440,
-      "sha256": "84c8a1949ceb1b3a04c5a27578b75b578e60f35999cc114308cfd6f2c0cb5e1d",
-      "git_blob_sha": "3d413b72754dfded22391da85e807c9a394335ba"
+      "bytes": 17563,
+      "sha256": "d7d776f5af2a78ea2397bb891a0ad04d7f73c6b790c434699006dac4de9f7574",
+      "git_blob_sha": "234f13eb4e95a3d9b55b157046030522c570b150"
     },
     {
       "path": "docs/从零搭建.md",
       "component": "docs",
-      "bytes": 14887,
-      "sha256": "2a0c64953c8e62dd8bfd6c1df2d31697b9bdea789e9e1463b47f158394d8b0dc",
-      "git_blob_sha": "ededbb9a1dd463415e90ea5115bef8b9322a22cd"
+      "bytes": 14988,
+      "sha256": "f1ac39e181f13ef2f6e358fb7c80cbaf15893b1e96a24a439cee803b1d594321",
+      "git_blob_sha": "4cc771a1aa750f34fe14f0662d5b399f8d512fbb"
     },
     {
       "path": "docs/使用手册.html",
       "component": "docs",
-      "bytes": 9725,
-      "sha256": "f9f48773d85ea5451603fc30dac4a6dd53eb2d47cdac58851f7c1e3f28eebd55",
-      "git_blob_sha": "9b08bd714d4b4aefb87bf54453eeee5a32fad08d"
+      "bytes": 10249,
+      "sha256": "832dc573937b8dc537e8921d5024573e0c7d6dc7f5877355856c9e99e7f8611d",
+      "git_blob_sha": "573668f625967de3749db75c383a67984335eba3"
     },
     {
       "path": "docs/使用手册.md",
       "component": "docs",
-      "bytes": 8096,
-      "sha256": "10e7a780bd2d25775e958c5175d868c8b3293ff576b0641d7abcca89aaab95aa",
-      "git_blob_sha": "0f32472971c03effa0773c0c7a706ebf445558ef"
+      "bytes": 8589,
+      "sha256": "61cf282222758fde92bd92730dbe269c223cba239925110ea33e427f8449e84a",
+      "git_blob_sha": "72b308e485203546739d2b4a19fd09a4f464cb88"
+    },
+    {
+      "path": "docs/域名与证书.html",
+      "component": "docs",
+      "bytes": 6743,
+      "sha256": "4c6b548087a07c357b155e8470cef8109665e98607b732eb8e975caedbb69af1",
+      "git_blob_sha": "bf762fe1b6d19c09bec902eeee2169807160a839"
+    },
+    {
+      "path": "docs/域名与证书.md",
+      "component": "docs",
+      "bytes": 5639,
+      "sha256": "90dd7c671720442c3d4f26d1a8934cebe48e780dc5c5496457d428de4c187060",
+      "git_blob_sha": "606be84f18d6ce592b90725a51e513710a01b894"
     },
     {
       "path": "docs/开发与测试.html",
       "component": "docs",
-      "bytes": 4966,
-      "sha256": "28a6267306c493efb63b542ba16b8b2e817ef606733043a044a3de04e4bb8268",
-      "git_blob_sha": "a898b122d7933c7eb43629a7ed9ca1cd49b13831"
+      "bytes": 5266,
+      "sha256": "faa0ffdb448b6aaf9d83fd02e09bfbd81e2273a01a5bc952605f42aa66f60a06",
+      "git_blob_sha": "35c88769c9df1791c55ddd84868db363eaab5379"
     },
     {
       "path": "docs/开发与测试.md",
       "component": "docs",
-      "bytes": 4018,
-      "sha256": "bbb83235936b330695e08f5ea87de89a45eac89c391f6a12481eaccd40afe11b",
-      "git_blob_sha": "3cc1b0b53269bbc48393790a4a98e4ba8d902f07"
+      "bytes": 4287,
+      "sha256": "3031fb5076307f1be7911d703bd5fddf1aab6e818fec6c572a8801302084cada",
+      "git_blob_sha": "4c29c9e4c89cb9a267cbceb9c34cb8c2e51a012c"
     },
     {
       "path": "docs/开源范围.html",
       "component": "docs",
-      "bytes": 4434,
-      "sha256": "d051297d1abd1651089d662ea935c3214894a53e18c66cf95deba7aa75d88bd6",
-      "git_blob_sha": "79a3f409e670b7e3c8979cc2e1b22d09709e5e54"
+      "bytes": 4443,
+      "sha256": "63974a181358cde0597ec891d1448accaceba7da20fef454b949fb1f757a30db",
+      "git_blob_sha": "87f3be48cb628caec2ae7b17b7996aebb2d58832"
     },
     {
       "path": "docs/开源范围.md",
@@ -440,9 +454,9 @@
     {
       "path": "docs/架构与数据.html",
       "component": "docs",
-      "bytes": 6925,
-      "sha256": "36baf57bc9d257164d78c3fede761c13860b1e81ad8456c502e21d202d5d1ba3",
-      "git_blob_sha": "f822f42d1a3001f0e28613d0f560eafe69398c94"
+      "bytes": 6934,
+      "sha256": "1fce9df67d2cd3d2e8834df33ce0d45fd66ed6063c30544fca71c39c4db10c71",
+      "git_blob_sha": "a8cf300f5914b9e7c6b2b7a14d2e0b8494d6ecfc"
     },
     {
       "path": "docs/架构与数据.md",
@@ -452,11 +466,25 @@
       "git_blob_sha": "2beb32e0d1e7a0f92e19cdab8e1643873f6e2129"
     },
     {
+      "path": "docs/版本更新.html",
+      "component": "docs",
+      "bytes": 3751,
+      "sha256": "3973920673c946356151621130edfa7129d616fc74a7bbdc894d9d095e11820e",
+      "git_blob_sha": "d1a44b61d9218ae6776b5dfd96b5b876953510c2"
+    },
+    {
+      "path": "docs/版本更新.md",
+      "component": "docs",
+      "bytes": 2934,
+      "sha256": "685f852a8595dfeb6d5ce529c434199e64c8d0bbd063ded7a219b1beb2f7f373",
+      "git_blob_sha": "67464880cfbc3b6b5aab19a5dcd4f9f2726e941e"
+    },
+    {
       "path": "docs/维护与排错.html",
       "component": "docs",
-      "bytes": 8842,
-      "sha256": "0c49f8bcab577ed8c101b9e3aa9bf2d359608e5a42e62c13ed36aa5031006834",
-      "git_blob_sha": "8466e31392595ebb72cc6ddbf7eeb4b3afd74b4a"
+      "bytes": 8851,
+      "sha256": "e492dd265812db708995edc30bda75717530d3e714cc38350e26a07239115d00",
+      "git_blob_sha": "1a79913e404c3d03ad7d5dbed4b177b50d321663"
     },
     {
       "path": "docs/维护与排错.md",
@@ -468,9 +496,9 @@
     {
       "path": "docs/请助手协助搭建.html",
       "component": "docs",
-      "bytes": 4449,
-      "sha256": "2f1a5a4fa92c336c1fa6ef1d10ee9502a2e427431aa0bae2d11b30251e459df3",
-      "git_blob_sha": "f46ba8e51ef8895a5ffadaed2909298bb12dd745"
+      "bytes": 4458,
+      "sha256": "3033f14e62a234fe7e10dad692e0f6be192f0e8a7dd6e303aba42793f2e38813",
+      "git_blob_sha": "c2c1ca81652cb23721019379a3a9c7bf8870896b"
     },
     {
       "path": "docs/请助手协助搭建.md",
@@ -482,16 +510,16 @@
     {
       "path": "docs/验证状态.html",
       "component": "docs",
-      "bytes": 3804,
-      "sha256": "f44ab472432e8692fadd456041009e488882e48231c9f8d736d2e0faf7f3398b",
-      "git_blob_sha": "c59e8cef361fc7b58f1e8693ab4c2b3b10d4c8f0"
+      "bytes": 4867,
+      "sha256": "3b68a6f2ab7f5a171f76bc41dd2943ce77c39fb3c3e3bb24ccd4675b966c20bd",
+      "git_blob_sha": "a82b5b817adb9f1b6653bff599c35f6f01736c4e"
     },
     {
       "path": "docs/验证状态.md",
       "component": "docs",
-      "bytes": 2843,
-      "sha256": "b47af33bbaa016692af1eb73ea16b2b32fcc84be5db44e86b0f5fd5251bec0be",
-      "git_blob_sha": "3dae3761014239b5255d140b6d13a7507a214fd4"
+      "bytes": 3823,
+      "sha256": "2389927d5e53bc4bb1249b967578165977b08ec21d3a1258a4aac3528d92ca5c",
+      "git_blob_sha": "536df2c16d65c02ddceeb8e54319a41e9b2533b6"
     },
     {
       "path": "experiments/LAUNCH_READINESS.md",
@@ -776,16 +804,16 @@
     {
       "path": "package-lock.json",
       "component": "project",
-      "bytes": 650,
-      "sha256": "fe35a5654add03457dcd9843c359d9e80d8e3de3fa5c948a2dddc8bd5634b99b",
-      "git_blob_sha": "fec0d43f9ece5d8f108c95cb8f6aed554d9b2969"
+      "bytes": 664,
+      "sha256": "620520efeb25abad9bea382ba3dd625dfd2b18c31cf24828c3e012c7194276e9",
+      "git_blob_sha": "4dbf45f5a08e37c1aece62fb13dc68565ef7cd66"
     },
     {
       "path": "package.json",
       "component": "project",
-      "bytes": 688,
-      "sha256": "c631f07dec39763d99c4fa352a1310734ee629a7c497064705e6122e071544fc",
-      "git_blob_sha": "768ca26779e84f54ecde0c8361126ac761044860"
+      "bytes": 733,
+      "sha256": "c4a0d9930c68e3ca53c67564001c27f9ef8f57112530aa0dce4e64f7b25fdc28",
+      "git_blob_sha": "0b7f6ba5933ec7764a1a14be06753e046de93033"
     },
     {
       "path": "requirements-test.txt",
@@ -867,9 +895,9 @@
     {
       "path": "site/index.html",
       "component": "site",
-      "bytes": 29086,
-      "sha256": "f0b688001509343f58f89da6a304b47916f438b4744ff8b5ce64f143012f98b6",
-      "git_blob_sha": "a936a0b5f85d6d08f903a751668894d09cbf5578"
+      "bytes": 29416,
+      "sha256": "9f7b52e97280244e35765e3d290197176df4ca5354f5fd45323905d3499da276",
+      "git_blob_sha": "48ea442891a301b357a2640b4b9a5b12ed61a19d"
     },
     {
       "path": "site/media-app.js",
@@ -888,9 +916,9 @@
     {
       "path": "site/membership.js",
       "component": "site",
-      "bytes": 8673,
-      "sha256": "96f762615a4f9f782ec928121b2159dc3536458e6ad241ab3f82541f623baabf",
-      "git_blob_sha": "45fcc77627a030dedb97fbe44c9716e0bfa7e807"
+      "bytes": 8788,
+      "sha256": "98e61d6faa0f20719276caff32edf6a827f7df550cca79856b04910fa9d14254",
+      "git_blob_sha": "6b14dae081f78df28149af47bf1eff06eb4013dd"
     },
     {
       "path": "site/password-reset-20261023-1.js",
@@ -916,9 +944,9 @@
     {
       "path": "site/priority-features-20261023-1.js",
       "component": "site",
-      "bytes": 12226,
-      "sha256": "c3b406c2f0a7b7b9293d89e9f6eb91111ea4315bf2eb644c4c313cdf9935684c",
-      "git_blob_sha": "9ca54d39294fa723431099ab51c1a25cfb834d0c"
+      "bytes": 12229,
+      "sha256": "0298be839ec2fb87c1dda4a94c13eca4aa91c77b7f5e6bb4caf4585d4cf7a6aa",
+      "git_blob_sha": "efe458fa87b27f8f5a5004c36ce1e7c499d3b85e"
     },
     {
       "path": "site/project-workflow.css",
@@ -1161,9 +1189,9 @@
     {
       "path": "tests/ported/identities/site.cjs",
       "component": "tests",
-      "bytes": 8281,
-      "sha256": "7652bc8691a95eae6218cb1b98251ffc5b14b6587a87f433b6cbac1a482e2332",
-      "git_blob_sha": "df253cab6ae15f76862177c59de1d33736879b0d"
+      "bytes": 8284,
+      "sha256": "a27f8da45c32dffedc38b73d99ba9cc8313a996336b13bd23a22ff892f38f78b",
+      "git_blob_sha": "b5594cf89f0268eed7cb1f373eba36fa2bd08c9c"
     },
     {
       "path": "tests/ported/password-reset/reset.cjs",
@@ -1236,6 +1264,13 @@
       "git_blob_sha": "6f441e9c53606d581f93ea22591142a3bb7ac67d"
     },
     {
+      "path": "tests/registration.cjs",
+      "component": "tests",
+      "bytes": 2409,
+      "sha256": "5223192f94e67d9eedd11d3f5fe5d22b1abad3fc4ab19f60c4fcc8bdefc4f56e",
+      "git_blob_sha": "6b277dbe13346ca656bc5c296cec84f362c6027d"
+    },
+    {
       "path": "tests/test_configure.py",
       "component": "tests",
       "bytes": 2122,
@@ -1287,9 +1322,9 @@
     {
       "path": "tools/render_handbook.py",
       "component": "tools",
-      "bytes": 3510,
-      "sha256": "a19da322f4bb132979663ae8ea6146c11505f021d255942aa1627ac819cd6f37",
-      "git_blob_sha": "5b762fe2a4035cbdc899a99e131dec914bec736a"
+      "bytes": 3519,
+      "sha256": "e65e925b98ffeac862a7dd2eb803b65e711cbc2a8a049382e89279145569a3f3",
+      "git_blob_sha": "2fa3a32700258d6daaceaa2e8f1004b45fb2c8a5"
     },
     {
       "path": "worker/.gitignore",

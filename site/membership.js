@@ -39,7 +39,8 @@ $('#email-form').onsubmit=async e=>{
  e.preventDefault();const b=$('#email-submit');b.disabled=true;
  try{const c=emailChallenge;if(!c||c.email!==$('#email-address').value.trim()||Date.now()>c.until)throw Error('请先向当前邮箱发送验证码，过期后需重新发送');
  const name=$('#email-name').value.trim(),username=$('#email-username').value.trim(),password=$('#email-password').value;
- if(!c.isUser&&(!name||!(/^[A-Za-z0-9][A-Za-z0-9_.-]{4,23}$/).test(username)))throw Error('新成员请填写组内昵称和 5–24 位用户名（英文字母、数字、下划线、点或短横线）');
+ if(!c.isUser&&!name)throw Error('请填写组内昵称，昵称可以使用中文');
+ if(!c.isUser&&!(/^[a-z][0-9a-z_-]{5,24}$/).test(username))throw Error('用户名须为 6–25 位，以小写英文字母开头，只能包含小写字母、数字、下划线和短横线；不能使用大写字母或英文句点');
  if(!c.isUser&&(password.length<8||password.length>32||!/[A-Z]/.test(password)||!/[a-z]/.test(password)||!/[0-9]/.test(password)||!(/[^A-Za-z0-9\s]/).test(password)))throw Error('请设置 8–32 位密码，包含大写字母、小写字母、数字和符号');
  if(!c.isUser&&password!==$('#email-password-confirm').value)throw Error('两次输入的密码不一致');
  const v=await authMail('verification/verify',{verification_id:c.id,verification_code:$('#email-code').value.trim()});
