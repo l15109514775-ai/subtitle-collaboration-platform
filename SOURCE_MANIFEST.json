@@ -972,9 +972,9 @@
     {
       "path": "site/security-admin.js",
       "component": "site",
-      "bytes": 3083,
-      "sha256": "47662da818f4a32bed84f38f74a264b66698eb063bade78cc441d8f417a03944",
-      "git_blob_sha": "b04228fde5d5240db9f559d02e1fa64c252f583d"
+      "bytes": 3897,
+      "sha256": "dcc79051ee4f6d029491034bce4e6b990cf6538286ad5548511a65b610eefc03",
+      "git_blob_sha": "48d8dd7511834f4901cb9c4430c312aa3abc2ded"
     },
     {
       "path": "site/security.js",
