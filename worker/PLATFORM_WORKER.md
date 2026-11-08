@@ -37,9 +37,13 @@ source-video SHA256 binding in `billing.py` remain effective across all jobs.
 
 ## Identity and input
 
-The API URL is fixed:
+The API URL is fixed except for the optional post-migration RPC alias:
 
 `https://example-env.api.tcloudbasegateway.com/v1/rdb/rest/rpc/st_cloud_worker_call`
+
+After applying migration `050_api_worker_aliases.sql`, set
+`SUBTITLE_API_WORKER_RPC=st_api_worker_call` to use the API-named alias; the
+legacy RPC remains the default for rollback compatibility.
 
 RPC POST JSON contains `p_key`, `p_action`, `p_job`, `p_payload`. The independent
 task capability is read from `SUBTITLE_API_WORKER_TOKEN` (preferred) or the

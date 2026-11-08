@@ -22,7 +22,8 @@ from operational_report import snapshot as operation_snapshot
 from delivery_contract import REQUIRED_FILES, MAX_FILE_BYTES, MAX_DELIVERY_BYTES
 
 HOST = 'example-env.api.tcloudbasegateway.com'
-API = 'https://' + HOST + '/v1/rdb/rest/rpc/st_cloud_worker_call'
+API_RPC = os.environ.get('SUBTITLE_API_WORKER_RPC', 'st_cloud_worker_call')
+API = 'https://' + HOST + '/v1/rdb/rest/rpc/' + API_RPC
 RESERVE_BYTES = 1024**3
 SOURCE_TTL = 23 * 3600
 

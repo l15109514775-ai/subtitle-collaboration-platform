@@ -146,9 +146,9 @@
     {
       "path": "database/migrations.json",
       "component": "database",
-      "bytes": 1114,
-      "sha256": "d8c0909becd8e54a0ad70dbb79f1269cb1afa218f77315c51680e4ab6bb3adf5",
-      "git_blob_sha": "4d84ee02aca9fa1993adef9e28ac961dee471bec"
+      "bytes": 1146,
+      "sha256": "ba43f272da9a115a9ad9b74497d3c7a83c2bfa93e1ba9e2cc274eb3ff6c2be77",
+      "git_blob_sha": "62cdc829b74f25744a47e0224ec77dfed8b0355d"
     },
     {
       "path": "database/migrations/001_closed_foundation.sql",
@@ -373,6 +373,13 @@
       "bytes": 5354,
       "sha256": "43c98c1c545761aa9785adfda7484ea4c54b29846966875586f197e939d9fbf2",
       "git_blob_sha": "9d0543fb0adad8c9fde7e51e939fda7ed7cc597a"
+    },
+    {
+      "path": "database/migrations/050_api_worker_aliases.sql",
+      "component": "database",
+      "bytes": 1028,
+      "sha256": "47f18ab86a946ca9dd3b9b8eec6b53d892302c0ed898e6ceda71389b25305668",
+      "git_blob_sha": "3197f3be3ad0d4a0eb880c9cf061045990494ba3"
     },
     {
       "path": "docs/handbook.css",
@@ -1343,9 +1350,9 @@
     {
       "path": "worker/PLATFORM_WORKER.md",
       "component": "worker",
-      "bytes": 10695,
-      "sha256": "b894900a5431b6e6a611af511d7e8e4a6871fcf342f8797d8d29af81fcd2ee70",
-      "git_blob_sha": "6fc2db7899d10324b5ac8a34aa80762958911db2"
+      "bytes": 10940,
+      "sha256": "76c683d299a50122613feff88aa08693fada06267036150615521c5e797fa17b",
+      "git_blob_sha": "30ecfa7703de5641996b9f69e87f539b6f85efd1"
     },
     {
       "path": "worker/PRODUCTION_FLOW.md",
@@ -1441,9 +1448,9 @@
     {
       "path": "worker/platform_worker.py",
       "component": "worker",
-      "bytes": 27071,
-      "sha256": "455063533774117eb33be5c8fe21998aad04c1a4a7f93d72b282d597631ca564",
-      "git_blob_sha": "7fef78969f9a80095250f4fbaeb3ea75c6192a3a"
+      "bytes": 27137,
+      "sha256": "1353df6414511190037196c90f834f2306b149c1670d7d31890ea061fa06169f",
+      "git_blob_sha": "a54b7f67d9eae0d77cf8f9bbf4c09eb9621701e5"
     },
     {
       "path": "worker/qwen_asr.py",
