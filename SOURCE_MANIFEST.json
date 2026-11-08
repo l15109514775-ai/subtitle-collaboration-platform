@@ -895,9 +895,9 @@
     {
       "path": "site/index.html",
       "component": "site",
-      "bytes": 24287,
-      "sha256": "90ef4ed00a88165175c0fc3429f3654995cca39e03f5929c49c5bd8c65072225",
-      "git_blob_sha": "8796fbb74d7b91fec243df8313a1e06eb8bcf5df"
+      "bytes": 24302,
+      "sha256": "93d7c3059a9dead09dcb58be16d0ecfac94759930d18b0feb64eedc91c413587",
+      "git_blob_sha": "73ed22f7177d12614df17873b26d4236791bde5f"
     },
     {
       "path": "site/media-app.js",
