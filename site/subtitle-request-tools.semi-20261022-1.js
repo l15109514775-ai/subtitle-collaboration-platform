@@ -15,7 +15,7 @@
     '网站：https://example-site.tcloudbaseapp.com/?request='+packet.request_id];
    if(packet.instruction&&packet.state==='approved'&&uuid.test(packet.job_id)){
     lines.push('额度：文字≤'+line(packet.max_text_requests)+'次；千问≤'+line(packet.max_secondary_requests)+'次',
-     '素材授权到期：'+line(packet.source_expires_at),'请核对网站最新状态后，在现有 Codex Cloud 字幕环境中新建任务并粘贴以下指令：',packet.instruction);
+     '素材授权到期：'+line(packet.source_expires_at),'请核对网站最新状态后，在现有 API Worker 字幕环境中新建任务并粘贴以下指令：',packet.instruction);
    }else lines.push('当前没有可执行指令。请到网站审批或核对任务状态；不要重复上传或重复启动。');
    return lines.join('\n');
   }

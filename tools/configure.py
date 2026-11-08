@@ -14,7 +14,6 @@ def validate(cfg):
  if urlsplit(cfg['text_api_url']).path.rstrip('/')!='/v1':raise ValueError('文字服务须支持 /v1/responses；填写以 /v1 结尾的地址')
  if urlsplit(cfg['text_api_url']).hostname in ('api.openai.com','platform.openai.com'):raise ValueError('此版本保留原项目规则：官方 OpenAI 密钥不用于文字翻译；不要自动改用其他计费渠道')
  if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]{0,99}',cfg['text_model']):raise ValueError('模型名只能包含英文、数字、点、横线和下划线')
- if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._-]{0,79}',cfg['cloud_environment_name']):raise ValueError('云环境名称使用英文、数字、点、横线和下划线')
  subject=cfg['owner_auth_subject']
  if subject=='COPY_YOUR_AUTH_USER_ID_HERE' or not re.fullmatch(r'[A-Za-z0-9._:@-]{1,200}',subject):raise ValueError('请复制自己在身份认证中的用户 ID，不是用户名/邮箱，也不是密码')
  return cfg
@@ -25,7 +24,6 @@ def render(cfg,out):
  replacements={
   'example-env.api.tcloudbasegateway.com':cfg['environment_id']+'.api.tcloudbasegateway.com',
   'example-site.tcloudbaseapp.com':urlsplit(cfg['website_url']).netloc,
-  'subtitle-delivery-20min-active':cfg['cloud_environment_name'],
   'https://text-provider.example.invalid/v1':cfg['text_api_url'].rstrip('/'),
   'text-provider.example.invalid':urlsplit(cfg['text_api_url']).hostname,
   'gpt-6-luna':cfg['text_model'],
@@ -81,8 +79,7 @@ def main():
  else:
   print('字幕协作台部署准备：仅在本地生成文件，不联网、不收费，也不需要密码或密钥。')
   cfg={}
-  for key,label in [('environment_id','腾讯云完整环境 ID'),('website_url','自己的静态网站 HTTPS 地址'),('cloud_environment_name','Codex Cloud 环境名 [回车使用 subtitle-delivery-20min-active]'),('text_api_url','已获授权的文字模型服务地址（以 /v1 结尾）'),('text_model','文字模型名 [回车使用 gpt-6-luna]'),('owner_auth_subject','组长在 CloudBase 身份认证中的用户 ID')]:cfg[key]=input(label+'：').strip()
-  cfg['cloud_environment_name']=cfg['cloud_environment_name'] or 'subtitle-delivery-20min-active'
+  for key,label in [('environment_id','腾讯云完整环境 ID'),('website_url','自己的静态网站 HTTPS 地址'),('text_api_url','已获授权的文字模型服务地址（以 /v1 结尾）'),('text_model','文字模型名 [回车使用 gpt-6-luna]'),('owner_auth_subject','组长在 CloudBase 身份认证中的用户 ID')]:cfg[key]=input(label+'：').strip()
   cfg['text_model']=cfg['text_model'] or 'gpt-6-luna'
   cfg['text_api_url']=cfg['text_api_url'] or 'https://text-provider.example.invalid/v1'
  try:result=render(cfg,args.out.resolve())

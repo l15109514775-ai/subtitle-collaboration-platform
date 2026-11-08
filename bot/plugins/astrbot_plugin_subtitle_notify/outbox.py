@@ -98,12 +98,12 @@ def approval_events(value):
 
 def execution_instruction(job):
     job=str(uuid.UUID(job))
-    return '请在已发布的字幕交付 Cloud 环境中仅处理网站作业 '+job+'。先按 PRODUCTION_FLOW.md 核对固定环境，再运行 .venv/bin/python platform_worker.py --job-id '+job+' --work-root /workspace/subtitle-platform-production --execute。单视频上限20分钟、文字400次、千问40次，并服从服务端更低限额。遇到未知请求结果立即停止核对，不重复发送，不修改代码、权限、有效期或账本。按正常流程自动回传九个私有字幕/报告文件后停止；保持人工听校和审核，不发放人工积分。'
+    return '网站作业 '+job+' 已批准。API worker 会使用自己的 SUBTITLE_API_WORKER_TOKEN 自动领取；单视频上限20分钟、文字400次、千问40次，并服从服务端更低限额。遇到未知请求结果立即停止核对，不重复发送，不修改代码、权限、有效期或账本。按正常流程自动回传九个私有字幕/报告文件后停止；保持人工听校和审核，不发放人工积分。'
 
 
 def approval_text(rows):
     if not rows or len(rows)>1:raise ValueError('One instruction per private message')
-    return '字幕申请已批准，等待你检查后手动启动。请先确认 Codex Cloud 环境为 subtitle-delivery-20min-active，且网站作业仍在排队。已启动、已取消或素材授权过期时不要执行；请回网站核对。\n\n以下整段可复制到新任务：\n\n'+execution_instruction(rows[0][1])
+    return '字幕申请已批准，API worker 会自动领取。请确认执行器在线、作业仍在排队；已启动、已取消或素材授权过期时不要重复执行。请回网站核对。\n\n执行说明：\n\n'+execution_instruction(rows[0][1])
 
 
 def notification_text(rows,mention=None):

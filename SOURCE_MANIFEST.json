@@ -118,16 +118,16 @@
     {
       "path": "bot/plugins/astrbot_plugin_subtitle_notify/outbox.py",
       "component": "bot",
-      "bytes": 7669,
-      "sha256": "52dc5c6c7a2e3ffbde5b6863f86262f14cb04fa2e092d905ccbc415e340482eb",
-      "git_blob_sha": "83292531832b075c5d0b5359c46439238c57c6eb"
+      "bytes": 7452,
+      "sha256": "69c2e0250e159b0bb142969f573e4d0aa48c6c0f433a973add8430da58ae90c3",
+      "git_blob_sha": "ae44496b4af24fb11c2d4f4699f94104e7a9a739"
     },
     {
       "path": "bot/plugins/astrbot_plugin_subtitle_notify/results.py",
       "component": "bot",
-      "bytes": 1525,
-      "sha256": "c45e11a228f7fa71e21f186e2afdb95ec2f392c34d74f3fdeec33fc57e33262a",
-      "git_blob_sha": "78199503c75e1604b05f5522a5bfe6b43457768e"
+      "bytes": 1523,
+      "sha256": "97f9a0e24669d0fec75495d95c11088b2e2fb10e73f40dc86a38584f1b222dd1",
+      "git_blob_sha": "348352faa5cd733471a82d50c53b5a0e58b367b2"
     },
     {
       "path": "bot/plugins/astrbot_plugin_subtitle_notify/schedule.py",
@@ -839,9 +839,9 @@
     {
       "path": "site/cloud-job-tools.ops-20261022-2.js",
       "component": "site",
-      "bytes": 9562,
-      "sha256": "dbb2119a9965276495bc740e32e62d65faa75ca086dfb3d25b64cb07f9d92f47",
-      "git_blob_sha": "a207d1c73a6852de380257d8c0a3e7c09477a5d0"
+      "bytes": 9560,
+      "sha256": "2c1253ef264b9c5783372d1c30ba47bb6ccc88e9167d288a1d28ee392a718a78",
+      "git_blob_sha": "3bc7e8f9fc7e9358858210308ddf94cf7b3df8c7"
     },
     {
       "path": "site/cloud-jobs.css",
@@ -853,16 +853,9 @@
     {
       "path": "site/cloud-jobs.workers-20261023-1.js",
       "component": "site",
-      "bytes": 23617,
-      "sha256": "e828833b2a1684d8c084d6dd3ca1f83d709ea06627a7d8935c155ecbe5f861e8",
-      "git_blob_sha": "6bab45397faa5f985f207c8d01c6594291b00259"
-    },
-    {
-      "path": "site/cloud-launch.prod-20261022-1.js",
-      "component": "site",
-      "bytes": 1781,
-      "sha256": "c34531cb1b524aed26142444ebf2f80f60a6d0373f4cc2f16e54c671ce50ca90",
-      "git_blob_sha": "0a182398f2e826bb1582d6425646ec2d84bf4a0b"
+      "bytes": 22488,
+      "sha256": "07230165721a19f3d979ee29176f15437b4bbb22145dc14b498d8195a763a4c0",
+      "git_blob_sha": "e8bb189d350f7672b30c674fe27e2ec9b67c3ca8"
     },
     {
       "path": "site/cloud-limits.js",
@@ -895,9 +888,9 @@
     {
       "path": "site/index.html",
       "component": "site",
-      "bytes": 29550,
-      "sha256": "3e3bcea99a91611ca575a341c1c7e4d2a549c80ec847e928694b701d79c2b454",
-      "git_blob_sha": "2e0c9197cf44c45c3979daab5413bf7ba8de96e3"
+      "bytes": 24287,
+      "sha256": "90ef4ed00a88165175c0fc3429f3654995cca39e03f5929c49c5bd8c65072225",
+      "git_blob_sha": "8796fbb74d7b91fec243df8313a1e06eb8bcf5df"
     },
     {
       "path": "site/media-app.js",
@@ -1014,16 +1007,16 @@
     {
       "path": "site/subtitle-request-tools.semi-20261022-1.js",
       "component": "site",
-      "bytes": 1980,
-      "sha256": "5fe388f65a0147a33403b1697c6d807d72e5a7d714ae77d1a4ef3ee8c57a096a",
-      "git_blob_sha": "663d639b724fc4011316ae9de8f13e9c8a20132c"
+      "bytes": 1979,
+      "sha256": "7d79ec29a858e799f884be1b96aaa3b0f53a854e7ef10449ab06872aeed5b908",
+      "git_blob_sha": "0637621c7cc3ecba3ccff1811dc72e76056f5125"
     },
     {
       "path": "site/subtitle-requests.delete-20261023-3.js",
       "component": "site",
-      "bytes": 19494,
-      "sha256": "1adf0bfb226e86f413c6ad77b911ef92d5ca74e1e2527fa5ca2e38d1af23c677",
-      "git_blob_sha": "5965639aaa0f68d3168804ee2e90c20a4200a5a7"
+      "bytes": 19486,
+      "sha256": "f2ba9827fdb552064e54bfca681ea7fa167c3622198b3df254f01a4a8a853a74",
+      "git_blob_sha": "b779bd85a4b9948db5375cc074482a4cf2aa54e0"
     },
     {
       "path": "site/subtitle-requests.semi-20261022-1.css",
@@ -1189,9 +1182,9 @@
     {
       "path": "tests/ported/identities/site.cjs",
       "component": "tests",
-      "bytes": 8284,
-      "sha256": "a27f8da45c32dffedc38b73d99ba9cc8313a996336b13bd23a22ff892f38f78b",
-      "git_blob_sha": "b5594cf89f0268eed7cb1f373eba36fa2bd08c9c"
+      "bytes": 8230,
+      "sha256": "25564b512508166301b7b98b16c7c2cb267367a3a4fa2e6255a7c3ef0168baa9",
+      "git_blob_sha": "83e5aba211575477b280be1d76f40f200ff19904"
     },
     {
       "path": "tests/ported/password-reset/reset.cjs",
@@ -1301,9 +1294,9 @@
     {
       "path": "tools/configure.py",
       "component": "tools",
-      "bytes": 6944,
-      "sha256": "27be0ad6e77e7728ebac57c7e030d940f5ba1c2245a7befc8378970d27eaef56",
-      "git_blob_sha": "31f7683514b3a8cfdb2a1c284dd704ac667c9e2b"
+      "bytes": 6512,
+      "sha256": "6bd6659e3e91cd865de4f7015b85674eaf7aa827027b3d6637dcc6f4130263a6",
+      "git_blob_sha": "61217c6b7772ae959adf1e1cf671eca4557c6ca3"
     },
     {
       "path": "tools/configure_bot.py",
@@ -1350,9 +1343,9 @@
     {
       "path": "worker/PLATFORM_WORKER.md",
       "component": "worker",
-      "bytes": 10659,
-      "sha256": "7b3b482b0e21baa34465a156edd41666d2aaa7c3035f3cabfffdfa47a7811b2d",
-      "git_blob_sha": "de8275ddf4c5dc3a4ec700a6de58a015c1bd5a46"
+      "bytes": 10695,
+      "sha256": "b894900a5431b6e6a611af511d7e8e4a6871fcf342f8797d8d29af81fcd2ee70",
+      "git_blob_sha": "6fc2db7899d10324b5ac8a34aa80762958911db2"
     },
     {
       "path": "worker/PRODUCTION_FLOW.md",
@@ -1364,9 +1357,9 @@
     {
       "path": "worker/README.md",
       "component": "worker",
-      "bytes": 499,
-      "sha256": "c17e4a50e6e8cc1de2f00c02fdee1b5119d98d14b82168551d3b8a120322ca06",
-      "git_blob_sha": "03fba9206916fc841d17d4631a5cea0edb9e032f"
+      "bytes": 562,
+      "sha256": "9df4a1303ee1126e8ca155d951a5ee72d3c91b907b844a84f172216b1e96b101",
+      "git_blob_sha": "3ddc6788e56b3579f6250e62449351c8c8bec043"
     },
     {
       "path": "worker/RELEASE.md",
@@ -1448,9 +1441,9 @@
     {
       "path": "worker/platform_worker.py",
       "component": "worker",
-      "bytes": 26910,
-      "sha256": "0e123d0a19db016860caad802199357803e760c26ae6e69f639b8901202218ae",
-      "git_blob_sha": "99aa2c0a5c74ead3fef52c4c45a2d5b8f876358b"
+      "bytes": 27071,
+      "sha256": "455063533774117eb33be5c8fe21998aad04c1a4a7f93d72b282d597631ca564",
+      "git_blob_sha": "7fef78969f9a80095250f4fbaeb3ea75c6192a3a"
     },
     {
       "path": "worker/qwen_asr.py",
@@ -1539,9 +1532,9 @@
     {
       "path": "worker/test_platform_worker.py",
       "component": "worker",
-      "bytes": 24217,
-      "sha256": "d6d5087821ed12240310a51915596a96c0077a4c306f0c8d133654f8b042a743",
-      "git_blob_sha": "0a19534f723c9a2acd41478eeffe6dc11ce68e03"
+      "bytes": 24810,
+      "sha256": "1133a6cb0a026703c91a085770e24df616bb2c151ea94456b75841c0ac443174",
+      "git_blob_sha": "39efeba88ba118d95a7dab9c315a31cb0851debe"
     },
     {
       "path": "worker/test_worker.py",

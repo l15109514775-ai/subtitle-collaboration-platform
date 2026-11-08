@@ -23,4 +23,4 @@ def result_text(job,state):
       'waiting_reconciliation':'云端字幕需要核对请求或回传结果。核对前请勿重复执行，避免重复调用。',
     }
     if state not in lines:raise ValueError('Unsupported result state')
-    return '字幕协作台 · 云端结果提醒\n'+lines[state]+'\n作业编号：'+job+'\n请登录网站 → 任务工作台 → 云端字幕交付，按作业编号核对。'
+    return '字幕协作台 · 云端结果提醒\n'+lines[state]+'\n作业编号：'+job+'\n请登录网站 → 任务工作台 → API 云端字幕，按作业编号核对。'

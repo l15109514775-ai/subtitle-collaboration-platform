@@ -8,7 +8,7 @@
  const uuid=v=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(v);
  function job(j,now=Date.now()){
   const p=j.progress||{},o=p.operations_v1?.version===1?p.operations_v1:null;
-  const states={uploading:['上传未完成','提交人','核对上传情况；当前流程不支持断点续传。'],queued:['待人工启动','组长','审批已完成。复制执行指令，在已发布的Codex Cloud环境新建任务并发送一次。'],running:['处理中','云端执行；组长跟进','可以关闭本机。遇到长时间无更新，请回原云对话核对，勿重复启动。'],waiting_configuration:['等待配置处理','组长','回原云对话检查配置、租约或素材授权。不得通过重复登记、重置额度来绕过问题。'],waiting_reconciliation:['请求结果待核对','组长','核对原云对话和供应商记录；结果不明时禁止自动重发识别或翻译请求。'],failed:['交付或处理失败','组长','核对原云对话。已有检查点不代表可以从新任务恢复，不要直接重新识别翻译。'],cancelled:['已取消','组长','不再执行；历史文件和记录不因此永久删除。'],succeeded:['AI初稿已交付','项目成员与审核人','下载ASS/SRT和质量报告，在字幕软件中听校并提交人工版本；AI交付不等于人工审核通过。']};
+  const states={uploading:['上传未完成','提交人','核对上传情况；当前流程不支持断点续传。'],queued:['待人工启动','组长','审批已完成。复制执行指令，在已发布的API Worker环境新建任务并发送一次。'],running:['处理中','云端执行；组长跟进','可以关闭本机。遇到长时间无更新，请回原云对话核对，勿重复启动。'],waiting_configuration:['等待配置处理','组长','回原云对话检查配置、租约或素材授权。不得通过重复登记、重置额度来绕过问题。'],waiting_reconciliation:['请求结果待核对','组长','核对原云对话和供应商记录；结果不明时禁止自动重发识别或翻译请求。'],failed:['交付或处理失败','组长','核对原云对话。已有检查点不代表可以从新任务恢复，不要直接重新识别翻译。'],cancelled:['已取消','组长','不再执行；历史文件和记录不因此永久删除。'],succeeded:['AI初稿已交付','项目成员与审核人','下载ASS/SRT和质量报告，在字幕软件中听校并提交人工版本；AI交付不等于人工审核通过。']};
   let [label,who,next]=states[j.state]||['状态未识别','组长','刷新并核对原云对话，勿重复执行。'];
   if(j.state==='queued'&&Number.isFinite(Date.parse(j.source_expires_at))&&Date.parse(j.source_expires_at)<=now)next='素材授权已过期。组长在原申请刷新素材授权，沿用同一任务；刷新不会重新识别或重置额度。';
   if(j.state==='running'&&j.stage==='publish_result_needs_reconciliation'){label='交付结果待核对';who='组长';next='字幕处理已进入交付阶段。先核对网站是否已有结果，再由组长回原云对话按原租约仅补传已保存的交付包。';}
@@ -26,7 +26,7 @@
  }
  function recoveryCommand(id){
   if(!uuid(id))throw Error('无效云任务编号');
-  return '仅在原Codex Cloud对话、原工作目录和原租约中，由组长核对后执行下面的固定命令。不得新建任务、重新领取、换身份、重置额度或调用模型。缺少session/publish-payload或租约失效即停止。\ncd /workspace/subtitle-cloud-worker\n.venv/bin/python platform_worker.py --job-id '+id+' --work-root /workspace/subtitle-platform-production --execute --publish-only';
+  return '仅在原API Worker对话、原工作目录和原租约中，由组长核对后执行下面的固定命令。不得新建任务、重新领取、换身份、重置额度或调用模型。缺少session/publish-payload或租约失效即停止。\ncd /workspace/subtitle-cloud-worker\n.venv/bin/python platform_worker.py --job-id '+id+' --work-root /workspace/subtitle-platform-production --execute --publish-only';
  }
  function requestHint(r){
   if(r.state==='approved'&&r.job_state==='succeeded')return '项目成员与审核人：字幕初稿已交付，请在下方任务卡查看报告并下载，继续人工听校。';
