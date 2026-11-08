@@ -31,5 +31,6 @@
   "048_priority_features.sql",
   "048a_recorded_worker_functions.sql",
   "049_cloud_worker_management.sql",
-  "050_api_worker_aliases.sql"
+  "050_api_worker_aliases.sql",
+  "051_api_worker_reset_claims.sql"
 ]

@@ -146,9 +146,9 @@
     {
       "path": "database/migrations.json",
       "component": "database",
-      "bytes": 1146,
-      "sha256": "ba43f272da9a115a9ad9b74497d3c7a83c2bfa93e1ba9e2cc274eb3ff6c2be77",
-      "git_blob_sha": "62cdc829b74f25744a47e0224ec77dfed8b0355d"
+      "bytes": 1183,
+      "sha256": "725bca7da6e779cfe69f5dfafdd7ccb5a1ca75f5297354caea0a885125f5199b",
+      "git_blob_sha": "d1d7863f2d32898f128a0435967d1cd24ecb0ee0"
     },
     {
       "path": "database/migrations/001_closed_foundation.sql",
@@ -380,6 +380,13 @@
       "bytes": 1028,
       "sha256": "47f18ab86a946ca9dd3b9b8eec6b53d892302c0ed898e6ceda71389b25305668",
       "git_blob_sha": "3197f3be3ad0d4a0eb880c9cf061045990494ba3"
+    },
+    {
+      "path": "database/migrations/051_api_worker_reset_claims.sql",
+      "component": "database",
+      "bytes": 1785,
+      "sha256": "9c12ea13bf0ed45dfc79f2db35d53768d0f6b2b9e1f5ea7d8fc7433cfc78402c",
+      "git_blob_sha": "3e1ad0b924b831d8bc65b61ac12798668b2c264a"
     },
     {
       "path": "docs/handbook.css",
@@ -860,9 +867,9 @@
     {
       "path": "site/cloud-jobs.workers-20261023-1.js",
       "component": "site",
-      "bytes": 22488,
-      "sha256": "07230165721a19f3d979ee29176f15437b4bbb22145dc14b498d8195a763a4c0",
-      "git_blob_sha": "e8bb189d350f7672b30c674fe27e2ec9b67c3ca8"
+      "bytes": 22941,
+      "sha256": "1ab755b5cb7c2a53e9467ea764326ad64ddd739c26d41e08854197afedbfe8d1",
+      "git_blob_sha": "ea33e6e7848b0926d097f12eff53437e05439186"
     },
     {
       "path": "site/cloud-limits.js",
@@ -895,9 +902,9 @@
     {
       "path": "site/index.html",
       "component": "site",
-      "bytes": 24302,
-      "sha256": "93d7c3059a9dead09dcb58be16d0ecfac94759930d18b0feb64eedc91c413587",
-      "git_blob_sha": "73ed22f7177d12614df17873b26d4236791bde5f"
+      "bytes": 24319,
+      "sha256": "14d249355f015f567114ebf62e1230eefcb7bdfd6ed7d316998f0263b0b475ad",
+      "git_blob_sha": "d10c0a9af9490db73fc37fc23625ef5de88379f5"
     },
     {
       "path": "site/media-app.js",
