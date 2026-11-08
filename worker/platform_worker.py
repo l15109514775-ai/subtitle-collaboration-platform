@@ -1,4 +1,4 @@
-"""Private Codex Cloud queue worker. Default is local configuration checks only."""
+"""Private API queue worker. Default is local configuration checks only."""
 import argparse
 import base64
 from datetime import datetime
@@ -117,19 +117,29 @@ def gateway_key():
     return key
 
 
+TOKEN_ENV = 'SUBTITLE_API_WORKER_TOKEN'
+LEGACY_TOKEN_ENV = 'SUBTITLE_PLATFORM_TOKEN'
+
+
+def worker_token():
+    """Read the API worker credential, accepting the legacy Codex-era name."""
+    for name in (TOKEN_ENV, LEGACY_TOKEN_ENV):
+        value = os.environ.get(name, '').strip()
+        if value:
+            return value
+    raise ConfigurationMissing('api_worker_token_absent')
+
+
 class Client:
     def __init__(self):
-        if not os.environ.get('SUBTITLE_PLATFORM_TOKEN'):
-            raise ConfigurationMissing('platform_identity_absent')
+        worker_token()
         gateway_key()
         self.http = opener()
 
     def call(self, action, job=None, payload=None):
         if action not in ('claim', 'heartbeat', 'stop', 'publish', 'reserve'):
             raise PlatformError('invalid_action')
-        key = os.environ.get('SUBTITLE_PLATFORM_TOKEN')
-        if not key:
-            raise ConfigurationMissing('platform_identity_absent')
+        key = worker_token()
         gateway = gateway_key()
         payload = dict(payload or {})
         if action == 'claim':

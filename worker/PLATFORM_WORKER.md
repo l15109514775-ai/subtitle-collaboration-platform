@@ -42,8 +42,8 @@ The API URL is fixed:
 `https://example-env.api.tcloudbasegateway.com/v1/rdb/rest/rpc/st_cloud_worker_call`
 
 RPC POST JSON contains `p_key`, `p_action`, `p_job`, `p_payload`. The independent
-task capability is read directly from Cloud variable `SUBTITLE_PLATFORM_TOKEN`
-into `p_key`. The RPC-only `Authorization: Bearer ...` header comes from
+task capability is read from `SUBTITLE_API_WORKER_TOKEN` (preferred) or the
+legacy `SUBTITLE_PLATFORM_TOKEN` alias into `p_key`. The RPC-only `Authorization: Bearer ...` header comes from
 `SUBTITLE_PLATFORM_GATEWAY_KEY`, a dedicated **Publishable Key with anon
 permissions**. Neither value nor complete headers are printed or saved in
 configuration/checkpoints. Both variables are required; there is no fallback to

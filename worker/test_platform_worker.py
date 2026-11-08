@@ -70,6 +70,14 @@ class PlatformTests(unittest.TestCase):
         self.assertIsNone(req.get_header('Cookie'))
         self.assertTrue(any(isinstance(h,worker.NoRelayRedirect) for h in platform.opener().handlers))
 
+    def test_api_worker_token_prefers_new_name_and_accepts_legacy_name(self):
+        with patch.dict(os.environ,{'SUBTITLE_API_WORKER_TOKEN':'new-worker-token',
+                                    'SUBTITLE_PLATFORM_GATEWAY_KEY':'dummy-gateway'},clear=True):
+            self.assertEqual(platform.worker_token(),'new-worker-token')
+        with patch.dict(os.environ,{'SUBTITLE_PLATFORM_TOKEN':'legacy-worker-token',
+                                    'SUBTITLE_PLATFORM_GATEWAY_KEY':'dummy-gateway'},clear=True):
+            self.assertEqual(platform.worker_token(),'legacy-worker-token')
+
     def test_gateway_key_is_required_and_known_admin_or_personal_jwt_is_rejected(self):
         with patch.dict(os.environ,{'SUBTITLE_PLATFORM_TOKEN':'dummy-platform-identity'},clear=True):
             with self.assertRaises(platform.ConfigurationMissing):platform.Client()
